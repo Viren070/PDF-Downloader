@@ -206,7 +206,7 @@ class App(customtkinter.CTk):
                     pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link['href'])).content)
                     success_count+=1
         if success_count==len(self.pdf_links):
-            self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded\n".format(success_count)))
+            self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))
         else:
             self.output_text.insert(customtkinter.END("{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links))))
         self.cancel_button.configure(state="disabled")  
