@@ -135,6 +135,9 @@ class App(customtkinter.CTk):
         if len(directory)==0:
             if not messagebox.askokcancel("PDF Scraper","You have not specified a download location, the files will download in the current directory."):
                 return False
+            else:
+                self.folder_entry.delete(0, customtkinter.END)
+                self.folder_entry.insert(0, os.getcwd())
         
         elif not PV.is_path_exists_or_creatable(directory):
             self.output_text.insert(customtkinter.END, "Invalid Directory provided by user\n")
