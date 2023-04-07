@@ -134,11 +134,11 @@ class App(customtkinter.CTk):
                 self.pdf_links.append(link)
         if i>0:
             message="Total of {} pdfs found on this URL\n".format(i)
-            self.waiting_for_result=False
+            
             if not self.waiting_for_result:
                 self.download_button.configure(state="normal")
                 self.find_button.configure(state="normal")
-                
+            self.waiting_for_result=False   
         else:
             message="No PDFs were found\n"
             self.download_button.configure(state="normal")
