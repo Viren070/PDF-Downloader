@@ -22,19 +22,19 @@ class App(customtkinter.CTk):
         self.url_label = customtkinter.CTkLabel(self, text="URL:")
         self.url_label.grid(row=0, column=0, padx=10, pady=10)
         
-        self.url_entry = customtkinter.CTkEntry(self, width=200)
+        self.url_entry = customtkinter.CTkEntry(self, width=400)
         self.url_entry.grid(row=0, column=1, padx=10, pady=10)
         
         self.folder_label = customtkinter.CTkLabel(self, text="Download Location:")
         self.folder_label.grid(row=1, column=0, padx=10, pady=10)
         
-        self.folder_entry = customtkinter.CTkEntry(self, width=200)
+        self.folder_entry = customtkinter.CTkEntry(self, width=400)
         self.folder_entry.grid(row=1, column=1, padx=10, pady=10)
         
         self.folder_button = customtkinter.CTkButton(self, text="Browse", command=self.select_folder)
         self.folder_button.grid(row=1, column=2, padx=10, pady=10)
         
-        self.output_text = customtkinter.CTkTextbox(self, height=200, width=500)
+        self.output_text = customtkinter.CTkTextbox(self, height=200, width=650)
         self.output_text.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
         
         self.range_frame = customtkinter.CTkFrame(self, fg_color=self._fg_color)
