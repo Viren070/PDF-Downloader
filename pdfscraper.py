@@ -144,7 +144,7 @@ class App(customtkinter.CTk):
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
         self.output_text.insert(customtkinter.END,message)
-        
+        self.output_text.see("end")
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         self.folder_entry.delete(0, customtkinter.END)
@@ -203,6 +203,7 @@ class App(customtkinter.CTk):
                 self.download_cancel_raised=False
                 self.cancel_button.configure(state="disabled")
                 self.output_text.insert(customtkinter.END, "Operation cancelled by user\n")
+                self.output_text.see("end")
                 self.download_button.configure(state="normal")
                 self.find_button.configure(state="normal")
                 return
@@ -229,6 +230,7 @@ class App(customtkinter.CTk):
             self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))
         else:
             self.output_text.insert(customtkinter.END("{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links))))
+        self.output_text.see("end")
         self.cancel_button.configure(state="disabled") 
         self.download_button.configure(state="normal")
         self.find_button.configure(state="normal") 
