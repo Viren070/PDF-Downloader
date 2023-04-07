@@ -66,8 +66,12 @@ class App(customtkinter.CTk):
             return False
     def find_url_button_event(self, download_next=False):
         url=self.url_entry.get()
+        self.download_button.configure(state="disabled")
+        self.find_button.configure(state="disabled")
         
         if not self.is_url(url):
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
             return 
 
         self.new_thread=threading.Thread(target=self.find_urls)
@@ -86,9 +90,13 @@ class App(customtkinter.CTk):
             response=requests.get(url)
         except requests.exceptions.MissingSchema:
             self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
             return
         except requests.exceptions.ConnectionError:
             messagebox.showerror("PDF Scraper", "Please check your internet connecion")
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
             return
        
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -133,6 +141,8 @@ class App(customtkinter.CTk):
         
         return True 
     def download_button_event(self):
+        self.download_button.configure(state="disabled")
+        self.find_button.configure(state="disabled")
         if len(self.pdf_links) < 1:
             self.find_url_button_event(True)
             print("url button event call finish")
@@ -143,6 +153,8 @@ class App(customtkinter.CTk):
             self.find_url_button_event(True)
             return
         if not self.valid_directory(self.folder_entry.get()):
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
             return
         if not self.filename_equal:
             self.naming_choice = tkinter.messagebox.askyesnocancel("PDF Scraper", "By default, the files will be named according to Option 1. Press No to name them according to Option 2.")
@@ -151,6 +163,8 @@ class App(customtkinter.CTk):
         if self.naming_choice is None:
             self.output_text.insert(customtkinter.END, "Operation cancelled by user\n")
             self.output_text.see("end")
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
             return
         if self.lower_range_entry is None:
             print("idk")
@@ -169,6 +183,8 @@ class App(customtkinter.CTk):
                 self.download_cancel_raised=False
                 self.cancel_button.configure(state="disabled")
                 self.output_text.insert(customtkinter.END, "Operation cancelled by user\n")
+                self.download_button.configure(state="normal")
+                self.find_button.configure(state="normal")
                 return
             if self.naming_choice: 
                 filename = re.sub('<[^>]+>', '', str(pdf_link))
@@ -194,6 +210,8 @@ class App(customtkinter.CTk):
         else:
             self.output_text.insert(customtkinter.END("{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links))))
         self.cancel_button.configure(state="disabled")  
+        self.download_button.configure(state="normal")
+        self.find_button.configure(state="normal") 
 #-------------------------------------------------------------
 
 
