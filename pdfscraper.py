@@ -123,6 +123,8 @@ class App(customtkinter.CTk):
              message="Total of {} pdfs found on this URL\n".format(i)
         else:
             message="No PDFs were found\n"
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
         self.output_text.insert(customtkinter.END,message)
     def select_folder(self):
         folder_path = filedialog.askdirectory()
