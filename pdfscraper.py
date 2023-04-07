@@ -64,6 +64,7 @@ class App(customtkinter.CTk):
             return True
         else:
             messagebox.showerror("PDF Scraper","Please enter a Valid URL")
+            
             return False
     def find_url_button_event(self, download_next=False):
         url=self.url_entry.get()
@@ -84,9 +85,11 @@ class App(customtkinter.CTk):
             
     def check_result(self, url):
         while self.waiting_for_result:
-            time.sleep(1)
+            if not self.waiting_for_result:
+                break
             if self.url_entry.get() != url or self.download_button.cget("state")=="normal":
                 return
+            time.sleep(1)
         if len(self.pdf_links)>0:
             self.download_button_event()
        
@@ -226,7 +229,7 @@ class App(customtkinter.CTk):
             self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))
         else:
             self.output_text.insert(customtkinter.END("{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links))))
-        self.cancel_button.configure(state="disabled")  
+        self.cancel_button.configure(state="disabled") 
         self.download_button.configure(state="normal")
         self.find_button.configure(state="normal") 
 #-------------------------------------------------------------
