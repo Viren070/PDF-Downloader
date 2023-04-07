@@ -90,6 +90,9 @@ class App(customtkinter.CTk):
         except requests.exceptions.MissingSchema:
             self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
             return
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("PDF Scraper", "Please check your internet connecion")
+            return
        
         soup = BeautifulSoup(response.text, 'html.parser')
 
