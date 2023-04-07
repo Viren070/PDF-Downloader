@@ -103,6 +103,7 @@ class App(customtkinter.CTk):
             response=requests.get(url)
         except requests.exceptions.MissingSchema:
             self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
+            self.output_text.see("end")
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
             return
@@ -111,6 +112,13 @@ class App(customtkinter.CTk):
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
             return
+        except requests.exceptions.InvalidSchema:
+            self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
+            self.output_text.see("end")
+            self.download_button.configure(state="normal")
+            self.find_button.configure(state="normal")
+            return
+            
        
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -176,6 +184,7 @@ class App(customtkinter.CTk):
         if not self.valid_directory(self.folder_entry.get()):
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
+            self.pdf_links=[]
             return
         if not self.filename_equal:
             self.naming_choice = tkinter.messagebox.askyesnocancel("PDF Scraper", "By default, the files will be named according to Option 1. Press No to name them according to Option 2.")
@@ -186,6 +195,7 @@ class App(customtkinter.CTk):
             self.output_text.see("end")
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
+            self.pdf_links=[]
             return
         if self.lower_range_entry is None:
             pass
