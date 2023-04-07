@@ -1,8 +1,6 @@
 import os
 import re
-import sys
 import threading
-import time
 import tkinter
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -72,7 +70,6 @@ class App(customtkinter.CTk):
         if not self.is_url(url):
             return 
 
-        
         self.new_thread=threading.Thread(target=self.find_urls)
         self.new_thread.start()
         if download_next:
