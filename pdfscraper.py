@@ -109,7 +109,7 @@ class App(customtkinter.CTk):
                 i+=1
                 self.output_text.insert(customtkinter.END, ("File {}: {}".format(i, link['href']+"\n")))
                 filename_option_one=re.sub('<[^>]+>', '', str(link))
-                filename_option_two=link['href'].split('/')[-1]
+                filename_option_two=link['href'].split('/')[-1].replace(".pdf","")
                 if filename_option_one==filename_option_two:
                     self.output_text.insert(customtkinter.END,("Filename: {} \n".format(filename_option_one)))
                     self.filename_equal = True
