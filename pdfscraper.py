@@ -145,10 +145,7 @@ class App(customtkinter.CTk):
         self.find_button.configure(state="disabled")
         if len(self.pdf_links) < 1:
             self.find_url_button_event(True)
-            print("url button event call finish")
-            if len(self.pdf_links) < 1:
-                print("length of array pfg link less than 1")
-                return
+            return
         if self.url != self.url_entry.get():
             self.find_url_button_event(True)
             return
@@ -167,10 +164,9 @@ class App(customtkinter.CTk):
             self.find_button.configure(state="normal")
             return
         if self.lower_range_entry is None:
-            print("idk")
+            pass
         self.download_thread=threading.Thread(target=self.download_pdf)
         self.download_thread.start()
-        self.cancel_button.grid
     def cancel_download(self):
         self.download_cancel_raised = True
     def download_pdf(self):
