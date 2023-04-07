@@ -2,6 +2,7 @@ import os
 import re
 import threading
 import tkinter
+import time
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from urllib.parse import urljoin
@@ -77,12 +78,21 @@ class App(customtkinter.CTk):
         self.new_thread=threading.Thread(target=self.find_urls)
         self.new_thread.start()
         if download_next:
-            self.after(2000, self.check_result)
-    def check_result(self):
+            self.result_thread=threading.Thread(target=self.check_result, args=(url,))
+            self.result_thread.start()
+            self.waiting_for_result=True
+            
+    def check_result(self, url):
+        while self.waiting_for_result:
+            time.sleep(1)
+            if self.url_entry.get() != url or self.download_button.cget("state")=="normal":
+                return
         if len(self.pdf_links)>0:
             self.download_button_event()
-        else:
-            self.after(2000, self.check_result)
+       
+            
+     
+            
     def find_urls(self):
         url=self.url_entry.get()
         self.url = url
@@ -120,12 +130,18 @@ class App(customtkinter.CTk):
                 self.output_text.see("end")
                 self.pdf_links.append(link)
         if i>0:
-             message="Total of {} pdfs found on this URL\n".format(i)
+            message="Total of {} pdfs found on this URL\n".format(i)
+            self.waiting_for_result=False
+            if not self.waiting_for_result:
+                self.download_button.configure(state="normal")
+                self.find_button.configure(state="normal")
+                
         else:
             message="No PDFs were found\n"
             self.download_button.configure(state="normal")
             self.find_button.configure(state="normal")
         self.output_text.insert(customtkinter.END,message)
+        
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         self.folder_entry.delete(0, customtkinter.END)
