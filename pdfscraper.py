@@ -96,13 +96,20 @@ class App(customtkinter.CTk):
             self.waiting_for_result=True
             
     def check_result(self, url):
+        print("started check result thread")
+        count=1
         while self.waiting_for_result:
+            print("count: {}".format(count))
             if not self.waiting_for_result:
+                print("waiting for result - false, breaking")
                 break
             if self.url_entry.get() != url or self.download_button.cget("state")=="normal":
+                print("url changed or other error")
                 return
+            count+=1
             time.sleep(1)
         if len(self.pdf_links)>0:
+            print("starting download button event")
             self.download_button_event()
        
             
@@ -226,9 +233,11 @@ class App(customtkinter.CTk):
         self.upper_range_entry.configure(state="disabled")
         self.url_entry.configure(state="disabled")
         if len(self.pdf_links) < 1:
+            print("length of array smaller than 1")
             self.find_url_button_event(True)
             return
         if self.url != self.url_entry.get():
+            print("self.url is not the url in the entry")
             self.find_url_button_event(True)
             return
         if not self.range_is_valid():
@@ -269,8 +278,10 @@ class App(customtkinter.CTk):
             self.upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
         self.download_thread=threading.Thread(target=self.download_pdf)
         self.download_thread.start()
+        print("starting download thread")
     def cancel_download(self):
         self.download_cancel_raised = True
+    
     def download_pdf(self):
         self.download_cancel_raised = False
         self.cancel_button.configure(state="normal")
