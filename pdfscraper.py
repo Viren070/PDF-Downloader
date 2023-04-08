@@ -318,7 +318,7 @@ class App(customtkinter.CTk):
         elif success_count == (self.upper_range - self.lower_range)+1:
             self.output_text.insert(customtkinter.END,("All {} PDF files within the range {} - {} downloaded to {}\n".format(success_count, self.lower_range, self.upper_range, folder_location)))
         else:
-            self.output_text.insert(customtkinter.END("{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links))))
+            self.output_text.insert(customtkinter.END, "{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links)))
         self.output_text.see("end")
         self.cancel_button.configure(state="disabled") 
         self.download_button.configure(state="normal")
