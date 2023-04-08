@@ -1,3 +1,4 @@
+
 # PDF-Scraper
 A Python program to download PDFs off webpages using a GUI made with customtkinter
 
@@ -5,7 +6,7 @@ A Python program to download PDFs off webpages using a GUI made with customtkint
 You enter a URL, and choose a download location - this can be left empty and the current directory will be used - and click either download or search URL. The search URL button will display the PDF files that were found on the webpage, and the download button will also download the PDF pages found on the webpage. A range can also be given if you only want to download certain files -  this can also be left empty.
 
 Here is a video demonstrating its use
-https://user-images.githubusercontent.com/71220264/230735930-d5dc0e36-8ccc-49c4-9060-a7cb3a37eb78.mp4
+![pdf_scraper-gif](https://user-images.githubusercontent.com/71220264/230736347-b1d4174e-cf89-4ed5-b299-626fada36936.gif)
 
 
 
