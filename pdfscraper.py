@@ -301,18 +301,20 @@ class App(customtkinter.CTk):
             file_location = os.path.join(folder_location, filename)
             with open(file_location+".pdf", "wb") as pdf:
                 try:
-                    self.output_text.insert(customtkinter.END,("File {}: {}\n".format(i, filename)))
                     self.output_text.see("end")
                     pdf.write((requests.get(pdf_link.get('href'))).content)
+                    self.output_text.insert(customtkinter.END,("Downloaded File {}: {}\n".format(i, filename)))
                     success_count+=1
                 except:
-                    self.output_text.insert(customtkinter.END,("Download failed, attempting alternative method\n"))
-                    self.output_text.insert(customtkinter.END,("Downloading file {} with alternative method: {}\n".format(i, filename)))
-                    self.output_text.see("end")
+                    pass
+                try:
                     pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link['href'])).content)
+                    self.output_text.insert(customtkinter.END,("Downloaded file {} with alternative method: {}\n".format(i, filename)))
                     success_count+=1
+                except:
+                    self.output_text.insert(customtkinter.END,("Failed to download file {}: {}\n".format(i, filename)))
         if success_count==len(self.pdf_links):
-            self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))
+            self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))  
         elif success_count == (self.upper_range - self.lower_range)+1:
             self.output_text.insert(customtkinter.END,("All {} PDF files within the range {} - {} downloaded to {}\n".format(success_count, self.lower_range, self.upper_range, folder_location)))
         else:
