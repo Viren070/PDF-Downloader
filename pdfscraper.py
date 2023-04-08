@@ -19,7 +19,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.title("PDF Scraper")
         self.pdf_links=[]
-        
+        self.waiting_for_result = False
         self.url_label = customtkinter.CTkLabel(self, text="URL:")
         self.url_label.grid(row=0, column=0, padx=10, pady=10)
         
@@ -39,17 +39,17 @@ class App(customtkinter.CTk):
         self.output_text.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
         
         self.range_frame = customtkinter.CTkFrame(self, fg_color=self._fg_color)
-        #self.range_frame.grid(row=3, column=1)
-        self.range_label = customtkinter.CTkLabel(self.range_frame, text="Range: ")
+        self.range_frame.grid(row=3, column=1)
+        self.range_label = customtkinter.CTkLabel(self.range_frame, text="Download within range: ")
         self.range_label.grid(row=0, column=0, padx=10, pady=10)
 
         self.lower_range_entry = customtkinter.CTkEntry(self.range_frame, width=50)
         self.lower_range_entry.grid(row=0, column=1,padx=10,pady=10)
 
-        self.higher_range_entry = customtkinter.CTkEntry(self.range_frame, width=50)
-        self.higher_range_entry.grid(row=0, column=2, padx=10, pady=10)
+        self.upper_range_entry = customtkinter.CTkEntry(self.range_frame, width=50)
+        self.upper_range_entry.grid(row=0, column=2, padx=10, pady=10)
 
-        self.find_button = customtkinter.CTkButton(self, text="Display PDFs", command=self.find_url_button_event)
+        self.find_button = customtkinter.CTkButton(self, text="Search URL for PDFs", command=self.find_url_button_event)
         self.find_button.grid(row=4, column=0, padx=10, pady=10)
         
         self.download_button = customtkinter.CTkButton(self, text="Download", command=self.download_button_event)
@@ -119,6 +119,8 @@ class App(customtkinter.CTk):
         url=self.url_entry.get()
         self.url = url
         try:
+            self.output_text.insert(customtkinter.END, "Searching URL...\n")
+            self.output_text.see("end")            
             response=requests.get(url)
         except requests.exceptions.MissingSchema:
             self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
@@ -129,11 +131,7 @@ class App(customtkinter.CTk):
             self.upper_range_entry.configure(state="normal")
             self.url_entry.configure(state="normal")
             return
-        except requests.exceptions.ConnectionError:
-            messagebox.showerror("PDF Scraper", "Please check your internet connecion")
-            self.download_button.configure(state="normal")
-            self.find_button.configure(state="normal")
-            return
+              
         except requests.exceptions.InvalidSchema:
             self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
             self.output_text.see("end")
@@ -152,8 +150,8 @@ class App(customtkinter.CTk):
             self.upper_range_entry.configure(state="normal")
             self.url_entry.configure(state="normal")
             return
-            
-       
+    
+    
         soup = BeautifulSoup(response.text, 'html.parser')
 
         links = soup.find_all('a')
@@ -175,7 +173,7 @@ class App(customtkinter.CTk):
                 self.output_text.see("end")
                 self.pdf_links.append(link)
         if i>0:
-            message="Total of {} pdfs found on this URL\n".format(i)
+            message="Total of {} PDF(s) found on this URL\n".format(i)
             
             
             if self.range_is_valid():
