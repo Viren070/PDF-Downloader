@@ -72,7 +72,20 @@ class App(customtkinter.CTk):
 
         self.cancel_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Cancel Download", state="disabled", command=self.cancel_download)
         self.cancel_button.grid(row=4, column=2, padx=10, pady=10)
+        
+        self.reset_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Reset", command=self.reset_widgets)
+        self.reset_button.grid(row=3, column=2, padx=10, pady=10)
 
+        self.help_one_title_label = customtkinter.CTkLabel(self.tabview.tab("Help"), text="Why are there two options for filenames?", font=customtkinter.CTkFont(size=20, family="Helvetica", weight="bold"))
+        self.help_one_title_label.grid(row=0, column=0)
+        self.help_one_answer_label = customtkinter.CTkLabel(self.tabview.tab("Help"), text="Option 1 gets the filename from the text that is visible on the website itself whereas Option 2 gets the filename from the end of    \nthe link for the PDF File.")
+        self.help_one_answer_label.grid(row=1, column=0, padx=10, pady=10)
+
+        self.help_two_title_label = customtkinter.CTkLabel(self.tabview.tab("Help"), text="What does the 'Reset' button do?", font=customtkinter.CTkFont(size=20, family="Helvetica", weight="bold"))
+        self.help_two_title_label.grid(row=2, column=0)
+        self.help_two_answer_label = customtkinter.CTkLabel(self.tabview.tab("Help"), text="Incase all the widgets become disabled due to an unhandled error, you can click the 'Reset' button to essentially reset the \napplication")
+        self.help_two_answer_label.grid(row=3, column=0, padx=10, pady=10)
+        
         self.mainloop()
     def is_url(self, url):
         if len(url)>0:
