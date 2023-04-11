@@ -135,35 +135,34 @@ class App(customtkinter.CTk):
         url=self.url_entry.get()
         self.waiting_for_result=False
         if not self.is_url(url):
-            
             return 
         self.change_widget_state("disabled")
-        self.new_thread=threading.Thread(target=self.find_urls)
+        
+        self.new_thread=threading.Thread(target=self.search_url_and_decide_names)
         self.new_thread.start()
         if download_next:
             self.result_thread=threading.Thread(target=self.check_result, args=(url,))
             self.result_thread.start()
             self.waiting_for_result=True
-                     
-    def find_urls(self):
-        url=self.url_entry.get()
-        self.url = url
+
+    def search_url_and_decide_names(self):
+        self.url = self.url_entry.get()
         try:
             self.output_text.insert(customtkinter.END, "Searching URL...\n")
             self.output_text.see("end")            
-            response=requests.get(url)
+            response=requests.get(self.url)
         except requests.exceptions.MissingSchema:
-            self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
+            self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(self.url))
             self.output_text.see("end")
             self.change_widget_state("normal")
             return
        
         except requests.exceptions.InvalidSchema:
-            self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(url))
+            self.output_text.insert(customtkinter.END, "ERROR: Invalid URL: {}\n".format(self.url))
             self.output_text.see("end")
             self.change_widget_state("normal")
             return
-
+        
         except requests.exceptions.ConnectionError:
             messagebox.showerror("PDF Scraper", "Could not connect to URL")
             self.change_widget_state("normal")
@@ -174,42 +173,82 @@ class App(customtkinter.CTk):
 
         links = soup.find_all('a')
         self.pdf_links=[]
-        i = 0
+        choice=None
+        duplicate_count=0
+        pdf_index=-1
         for link in links:
-            if ('.pdf' in link.get('href', [])):
-                i+=1
-                self.output_text.insert(customtkinter.END, ("\nFile {}: {}".format(i, link['href']+"\n")))
-                filename_option_one=re.sub('<[^>]+>', '', str(link))
-                try:
-                    filename_option_two=link['href'].split('/')[-1].split('.pdf')[-2]
-                except:
-                    filename_option_two = ""
-                if filename_option_one==filename_option_two:
-                    self.output_text.insert(customtkinter.END,("Filename: {} \n".format(filename_option_one)))
-                    self.filename_equal = True
-                else:
-                    self.output_text.insert(customtkinter.END,("Filename Option 1: {} \n".format(filename_option_one)))
-                    self.output_text.insert(customtkinter.END,("Filename Option 2: {} \n".format(filename_option_two)))
-                    self.filename_equal = False
-                self.output_text.see("end")
-                self.pdf_links.append(link)
-        if i>0:
-            message="\nTotal of {} PDF(s) found on this URL\n".format(i)
+            if ('.pdf' in link.get('href', [])) and not(link.get('href', []) in [l[0]['href'] for l in self.pdf_links]):
+                pdf_index+=1
+                filename_one=re.sub('<[^>]+>', '', str(link)) if not re.sub('<[^>]+>', '', str(link)) == "" else "PDF {}".format(pdf_index+1)
+                filename_two=link['href'].split('/')[-1].split('.pdf')[-2] if not link['href'].split('/')[-1].split('.pdf')[-2] == "" else "PDF {}".format(pdf_index+1)
+                if filename_one in [l[1] for l in self.pdf_links]:
+                    # filename already exists in pdf_links list
+                    
+                    duplicate_count+=1
+                    if choice is None:
+                        custom_string=""
+                        choice=messagebox.askyesno("PDF Downloader","Duplicate filenames have been detected for Option 1. Would you like to use the previous files' name and add a string. (This is only useful for specific scenarios such as if the duplicate names are 'Answers'. If you say No the files will be incrementally numbered each time a duplicate filename is discovered)")
+                        index = [ind for ind, l in enumerate(self.pdf_links) if filename_one == l[1]][0]
+                        if choice: custom_string=customtkinter.CTkInputDialog(text="Enter a custom string to be added to the end of duplicate filenames", title="CTkInputDialog").get_input()
+    
+                        if choice and (custom_string == "" or (" " in custom_string and len(custom_string)<4)):
+                            choice=False
+                    if choice:
+                        filename_one=(str(self.pdf_links[pdf_index-1][1])+" - "+custom_string)
+                        
+                    else:
+                        filename_one=filename_one+" - "+str(duplicate_count+1)
             
-            
-            
-            if not self.waiting_for_result:
-                self.change_widget_state("normal")
+                if filename_two in [l[2] for l in self.pdf_links]:
+                    filename_two = filename_two+"_- "+str(duplicate_count+1)
              
-        else:
-            message="\nNo PDF files were found\n"
+                self.pdf_links.append([link, filename_one, filename_two])
+        if duplicate_count>0 and choice:
+            self.pdf_links[index][1]=(str(self.pdf_links[index-1][1])+" - "+custom_string)
+        elif duplicate_count > 0 and not choice:
+            self.pdf_links[index][1]=(str(self.pdf_links[index][1])+" - 1")
+        if len(self.pdf_links)>0:
+            self.display_links()     
+        else: 
+            self.output_text.insert(customtkinter.END,("\nNo PDFs were found on this URL\n"))
+            self.output_text.see("end")
             self.change_widget_state("normal")
+
+    def display_links(self):
         
-        self.output_text.insert(customtkinter.END,message)
+     
+        for i, link in enumerate(self.pdf_links, start=1):
+           
+            pdf_link=link[0] if "http" in link[0] else urljoin(self.url,link[0]['href'])
+            self.output_text.insert(customtkinter.END, ("\nFile {}: {}\n".format(i, pdf_link)))
+
+            
+            if link[1]==link[2]:
+                self.output_text.insert(customtkinter.END,("Filename: {} \n".format(link[1])))
+                self.filename_equal = True
+            else:
+                self.output_text.insert(customtkinter.END,("Filename Option 1: {} \n".format(link[1])))
+                self.output_text.insert(customtkinter.END,("Filename Option 2: {} \n".format(link[2])))
+                self.filename_equal = False
+            self.output_text.see("end")
+            
+       
+       
+            
+            
+            
+        if not self.waiting_for_result:
+            self.change_widget_state("normal")
+             
+        
+            
+            
+        
+        self.output_text.insert(customtkinter.END,("\nTotal of {} PDF(s) found on this URL\n".format(len(self.pdf_links))))
         self.output_text.see("end")
         self.waiting_for_result = False
     def download_button_event(self):
-        self.change_widget_state("disabled")
+      
         if len(self.pdf_links) < 1:
             print("length of array smaller than 1")
             self.search_url_button_event(True)
@@ -237,6 +276,7 @@ class App(customtkinter.CTk):
             self.output_text.see("end")
             self.change_widget_state("normal")
             return
+        self.change_widget_state("disabled")
         if self.range_is_valid():
             self.lower_range = int(self.lower_range_entry.get()) if self.lower_range_entry.get() else 1
             self.upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
@@ -254,7 +294,6 @@ class App(customtkinter.CTk):
         self.cancel_button.configure(state="normal")
         folder_location=self.folder_entry.get().replace("/","\\")
         success_count=0
-        
 
         for i, pdf_link in enumerate(self.pdf_links, start=1):   
             if i < self.lower_range or i > self.upper_range:
@@ -267,32 +306,54 @@ class App(customtkinter.CTk):
                 self.change_widget_state("normal")
                 return
             if self.naming_choice: 
-                filename = re.sub('<[^>]+>', '', str(pdf_link))
+                filename = pdf_link[1]
             else:
-                filename = pdf_link['href'].split('/')[-1]
+                filename = pdf_link[2]
             
+                
+          
             if not os.path.exists(folder_location):Path(folder_location).mkdir(parents=True, exist_ok=True)
-            file_location = os.path.join(folder_location, filename)
-            with open(file_location+".pdf", "wb") as pdf:
+            file_location = os.path.join(folder_location, filename+".pdf") 
+            self.output_text.insert(customtkinter.END,("\nFile {}: {}\n".format(i, filename)))
+            if os.path.exists(file_location):
+                self.output_text.insert(customtkinter.END,("File skipped as already downloaded\n"))
+                self.output_text.see("end")
+                continue
+            delete_file=False
+            self.output_text.insert(customtkinter.END,("Downloading...\n"))
+            self.output_text.see("end")
+            with open(file_location, "wb") as pdf:
                 try:
                     self.output_text.see("end")
-                    pdf.write((requests.get(pdf_link.get('href'))).content)
-                    self.output_text.insert(customtkinter.END,("Downloaded File {}: {}\n".format(i, filename)))
+                    pdf.write((requests.get(pdf_link[0]['href'])).content)
+                    self.output_text.insert(customtkinter.END,("Successfully Downloaded\n"))
+                    self.output_text.see("end")
                     success_count+=1
                 except:
                     pass
                 try:
-                    pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link['href'])).content)
-                    self.output_text.insert(customtkinter.END,("Downloaded file {} with alternative method: {}\n".format(i, filename)))
+                    pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link[0]['href'])).content)
+                    self.output_text.insert(customtkinter.END,("Sucessfully Downloaded\n"))
+                    self.output_text.see("end")
                     success_count+=1
                 except:
-                    self.output_text.insert(customtkinter.END,("Failed to download file {}: {}\n".format(i, filename)))
+                    self.output_text.insert(customtkinter.END,("Download Failed\n"))
+                    self.output_text.see("end")
+                    delete_file=True
+            if delete_file:
+                try:
+                    os.unlink(file_location)
+                except:
+                    self.output_text.insert(customtkinter.END,("Failed to delete file {}\n".format(filename)))
+                    self.output_text.see("end")
+        
         if success_count==len(self.pdf_links):
-            self.output_text.insert(customtkinter.END,("All {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))  
+            self.output_text.insert(customtkinter.END,("\nAll {} PDF files successfully downloaded to {}\n".format(success_count, folder_location)))  
         elif success_count == (self.upper_range - self.lower_range)+1:
-            self.output_text.insert(customtkinter.END,("All {} PDF files within the range {} - {} downloaded to {}\n".format(success_count, self.lower_range, self.upper_range, folder_location)))
+            self.output_text.insert(customtkinter.END,("\nAll {} PDF files within the range {} - {} downloaded to {}\n".format(success_count, self.lower_range, self.upper_range, folder_location)))
         else:
-            self.output_text.insert(customtkinter.END, "{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links)))
+            self.output_text.insert(customtkinter.END, "\n{} / {} PDF files downloaded\n".format(success_count, len(self.pdf_links)))
+       
         self.output_text.see("end")
         self.change_widget_state("normal")
         self.cancel_button.configure(state="disabled")
