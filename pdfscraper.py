@@ -133,7 +133,7 @@ class App(customtkinter.CTk):
        
     def search_url_button_event(self, download_next=False):
         url=self.url_entry.get()
-        
+        self.waiting_for_result=False
         if not self.is_url(url):
             
             return 
