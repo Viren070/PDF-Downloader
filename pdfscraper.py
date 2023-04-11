@@ -489,7 +489,8 @@ class App(customtkinter.CTk):
 #-------------------------------------------------------------
 
 
-PDFScraper = App()
+if __name__ == "__main__":
+    PDFScraper = App()
 
 
 
