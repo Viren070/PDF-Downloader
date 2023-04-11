@@ -139,9 +139,12 @@ class App(customtkinter.CTk):
         for link in links:
             if ('.pdf' in link.get('href', [])):
                 i+=1
-                self.output_text.insert(customtkinter.END, ("File {}: {}".format(i, link['href']+"\n")))
+                self.output_text.insert(customtkinter.END, ("\nFile {}: {}".format(i, link['href']+"\n")))
                 filename_option_one=re.sub('<[^>]+>', '', str(link))
-                filename_option_two=link['href'].split('/')[-1].replace(".pdf","")
+                try:
+                    filename_option_two=link['href'].split('/')[-1].split('.pdf')[-2]
+                except:
+                    filename_option_two = ""
                 if filename_option_one==filename_option_two:
                     self.output_text.insert(customtkinter.END,("Filename: {} \n".format(filename_option_one)))
                     self.filename_equal = True
@@ -152,62 +155,29 @@ class App(customtkinter.CTk):
                 self.output_text.see("end")
                 self.pdf_links.append(link)
         if i>0:
-            message="Total of {} PDF(s) found on this URL\n".format(i)
+            message="\nTotal of {} PDF(s) found on this URL\n".format(i)
             
             
-            if self.range_is_valid():
-                self.lower_range = int(self.lower_range_entry.get()) if self.lower_range_entry.get() else 1
-                self.upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
-                self.waiting_for_result=False  
-            else:
-                self.download_button.configure(state="normal")
-                self.find_button.configure(state="normal")
-                self.lower_range_entry.configure(state="normal")
-                self.upper_range_entry.configure(state="normal")
-                self.url_entry.configure(state="normal")
-                messagebox.showerror("PDF Scraper", "Please enter a valid range")
-                return
+            
             if not self.waiting_for_result:
                 self.change_widget_state("normal")
              
         else:
-            message="No PDF files were found\n"
-            self.download_button.configure(state="normal")
-            self.find_button.configure(state="normal")
-            self.lower_range_entry.configure(state="normal")
-            self.upper_range_entry.configure(state="normal")
-            self.url_entry.configure(state="normal")
+            message="\nNo PDF files were found\n"
+            self.change_widget_state("normal")
         
         self.output_text.insert(customtkinter.END,message)
         self.output_text.see("end")
-    def select_folder(self):
-        folder_path = filedialog.askdirectory()
-        self.folder_entry.delete(0, customtkinter.END)
-        self.folder_entry.insert(0, folder_path)
-    
-    def valid_directory(self, directory):
-        if len(directory)==0:
-            if not messagebox.askokcancel("PDF Scraper","You have not specified a download location, the files will download in the current directory."):
-                return False
-            else:
-                self.folder_entry.delete(0, customtkinter.END)
-                self.folder_entry.insert(0, os.getcwd())
-        
-        elif not PV.is_path_exists_or_creatable(directory):
-            self.output_text.insert(customtkinter.END, "Invalid Directory provided by user\n")
-            self.output_text.see("end")
-            return False
-        
-        return True 
+        self.waiting_for_result = False
     def download_button_event(self):
         self.change_widget_state("disabled")
         if len(self.pdf_links) < 1:
             print("length of array smaller than 1")
-            self.find_url_button_event(True)
+            self.search_url_button_event(True)
             return
         if self.url != self.url_entry.get():
             print("self.url is not the url in the entry")
-            self.find_url_button_event(True)
+            self.search_url_button_event(True)
             return
         if not self.range_is_valid():
             self.change_widget_state("normal")
@@ -228,15 +198,17 @@ class App(customtkinter.CTk):
             self.output_text.see("end")
             self.change_widget_state("normal")
             return
-        if self.lower_range != self.lower_range_entry.get() or self.upper_range != self.upper_range_entry.get():
-            print("ranges changed")
+        if self.range_is_valid():
             self.lower_range = int(self.lower_range_entry.get()) if self.lower_range_entry.get() else 1
             self.upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
+        else:
+            self.change_widget_state("normal")
+            messagebox.showerror("PDF Scraper", "Please enter a valid range")
+            return
         self.download_thread=threading.Thread(target=self.download_pdf)
         self.download_thread.start()
         print("starting download thread")
-    def cancel_download(self):
-        self.download_cancel_raised = True
+    
     
     def download_pdf(self):
         self.download_cancel_raised = False
