@@ -68,8 +68,11 @@ class App(customtkinter.CTk):
             
             return False
     def range_is_valid(self):
-        lower_range = int(self.lower_range_entry.get()) if self.lower_range_entry.get() else 1
-        upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
+        try:
+            lower_range = int(self.lower_range_entry.get()) if self.lower_range_entry.get() else 1
+            upper_range = int(self.upper_range_entry.get()) if self.upper_range_entry.get() else len(self.pdf_links)
+        except ValueError:
+            return False
         if upper_range < lower_range or lower_range > len(self.pdf_links) or upper_range > len(self.pdf_links) or lower_range < 1:
             return False
         else:
