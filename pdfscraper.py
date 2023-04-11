@@ -87,6 +87,15 @@ class App(customtkinter.CTk):
         self.help_two_answer_label.grid(row=3, column=0, padx=10, pady=10)
         
         self.mainloop()
+        
+    def reset_widgets(self):
+        self.change_widget_state("normal")
+        self.cancel_download()
+        self.pdf_links=[]
+        self.url=None
+        self.url_entry.delete(0, "end")
+        self.folder_entry.delete(0, "end")
+        self.lower_range_entry.delete(0, "end")
     def is_url(self, url):
         if len(url)>0:
             return True
