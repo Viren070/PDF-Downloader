@@ -4,6 +4,7 @@ import re
 import sys
 import threading
 import time
+import webbrowser
 import tkinter
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -18,28 +19,41 @@ ERROR_INVALID_NAME = 123
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.title("PDF Scraper")
+        self.title("PDF Downloader")
         self.pdf_links=[]
         self.waiting_for_result = False
-        self.url_label = customtkinter.CTkLabel(self, text="URL:")
+        self.geometry("772x577")
+        self.resizable(False, False)
+        self.title_label = customtkinter.CTkLabel(self, text="PDF Downloader v1.0.0-alpha", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
+        self.title_label.grid(row=0, column=0, padx=10, pady=10)
+        
+        self.author_label = customtkinter.CTkLabel(self, text="Viren070 on GitHub", cursor="hand2",text_color="blue",font=customtkinter.CTkFont(family="Helvetica", size=15, underline=True))
+        self.author_label.bind("<Button-1>", lambda e: webbrowser.open_new_tab("https://github.com/Viren070"))
+        self.author_label.grid(row=1, column=0, padx=10, pady=10)
+        
+        self.tabview = customtkinter.CTkTabview(self, width=250)
+        self.tabview.add("Downloader")
+        self.tabview.add("Help")
+        self.tabview.grid(row=2,column=0, padx=10, pady=10)
+        self.url_label = customtkinter.CTkLabel(self.tabview.tab("Downloader"), text="URL:")
         self.url_label.grid(row=0, column=0, padx=10, pady=10)
         
-        self.url_entry = customtkinter.CTkEntry(self, width=400)
+        self.url_entry = customtkinter.CTkEntry(self.tabview.tab("Downloader"), width=400)
         self.url_entry.grid(row=0, column=1, padx=10, pady=10)
         
-        self.folder_label = customtkinter.CTkLabel(self, text="Download Location:")
+        self.folder_label = customtkinter.CTkLabel(self.tabview.tab("Downloader"), text="Download Location:")
         self.folder_label.grid(row=1, column=0, padx=10, pady=10)
         
-        self.folder_entry = customtkinter.CTkEntry(self, width=400)
+        self.folder_entry = customtkinter.CTkEntry(self.tabview.tab("Downloader"), width=400)
         self.folder_entry.grid(row=1, column=1, padx=10, pady=10)
         
-        self.folder_button = customtkinter.CTkButton(self, text="Browse", command=self.select_folder)
+        self.folder_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Browse", command=self.select_folder)
         self.folder_button.grid(row=1, column=2, padx=10, pady=10)
         
-        self.output_text = customtkinter.CTkTextbox(self, height=200, width=650)
+        self.output_text = customtkinter.CTkTextbox(self.tabview.tab("Downloader"), height=200, width=650)
         self.output_text.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
         
-        self.range_frame = customtkinter.CTkFrame(self, fg_color=self._fg_color)
+        self.range_frame = customtkinter.CTkFrame(self.tabview.tab("Downloader"), fg_color=self._fg_color)
         self.range_frame.grid(row=3, column=1)
         self.range_label = customtkinter.CTkLabel(self.range_frame, text="Download within range: ")
         self.range_label.grid(row=0, column=0, padx=10, pady=10)
@@ -50,13 +64,13 @@ class App(customtkinter.CTk):
         self.upper_range_entry = customtkinter.CTkEntry(self.range_frame, width=50)
         self.upper_range_entry.grid(row=0, column=2, padx=10, pady=10)
 
-        self.search_button = customtkinter.CTkButton(self, text="Search URL for PDFs", command=self.search_url_button_event)
+        self.search_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Search URL for PDFs", command=self.search_url_button_event)
         self.search_button.grid(row=4, column=0, padx=10, pady=10)
         
-        self.download_button = customtkinter.CTkButton(self, text="Download", command=self.download_button_event)
+        self.download_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Download", command=self.download_button_event)
         self.download_button.grid(row=4, column=1, padx=10, pady=10)
 
-        self.cancel_button = customtkinter.CTkButton(self, text="Cancel", state="disabled", command=self.cancel_download)
+        self.cancel_button = customtkinter.CTkButton(self.tabview.tab("Downloader"), text="Cancel Download", state="disabled", command=self.cancel_download)
         self.cancel_button.grid(row=4, column=2, padx=10, pady=10)
 
         self.mainloop()
