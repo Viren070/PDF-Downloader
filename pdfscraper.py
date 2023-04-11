@@ -366,7 +366,7 @@ class App(customtkinter.CTk):
         self.lower_range_entry.configure(state=state)
         self.upper_range_entry.configure(state=state)
         self.url_entry.configure(state=state)
-
+        self.folder_button.configure(state=state)
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         self.folder_entry.delete(0, customtkinter.END)
