@@ -330,16 +330,16 @@ class App(customtkinter.CTk):
                     self.output_text.see("end")
                     success_count+=1
                 except:
-                    pass
-                try:
-                    pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link[0]['href'])).content)
-                    self.output_text.insert(customtkinter.END,("Sucessfully Downloaded\n"))
-                    self.output_text.see("end")
-                    success_count+=1
-                except:
-                    self.output_text.insert(customtkinter.END,("Download Failed\n"))
-                    self.output_text.see("end")
-                    delete_file=True
+                    
+                    try:
+                        pdf.write(requests.get(urljoin(self.url_entry.get(),pdf_link[0]['href'])).content)
+                        self.output_text.insert(customtkinter.END,("Sucessfully Downloaded\n"))
+                        self.output_text.see("end")
+                        success_count+=1
+                    except:
+                        self.output_text.insert(customtkinter.END,("Download Failed\n"))
+                        self.output_text.see("end")
+                        delete_file=True
             if delete_file:
                 try:
                     os.unlink(file_location)
