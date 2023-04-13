@@ -115,20 +115,15 @@ class App(customtkinter.CTk):
             return True
         
     def check_result(self, url):
-        print("started check result thread")
-        count=1
         while self.waiting_for_result:
-            print("count: {}".format(count))
             if not self.waiting_for_result:
-                print("waiting for result - false, breaking")
                 break
             if self.url_entry.get() != url or self.download_button.cget("state")=="normal":
-                print("url changed or other error")
                 return
-            count+=1
             time.sleep(1)
+        
+
         if len(self.pdf_links)>0:
-            print("starting download button event")
             self.download_button_event()
        
     def search_url_button_event(self, download_next=False):
@@ -141,9 +136,10 @@ class App(customtkinter.CTk):
         self.new_thread=threading.Thread(target=self.search_url_and_decide_names)
         self.new_thread.start()
         if download_next:
+            self.waiting_for_result=True
             self.result_thread=threading.Thread(target=self.check_result, args=(url,))
             self.result_thread.start()
-            self.waiting_for_result=True
+            
 
     def search_url_and_decide_names(self):
         self.url = self.url_entry.get()
@@ -250,11 +246,9 @@ class App(customtkinter.CTk):
     def download_button_event(self):
       
         if len(self.pdf_links) < 1:
-            print("length of array smaller than 1")
             self.search_url_button_event(True)
             return
         if self.url != self.url_entry.get():
-            print("self.url is not the url in the entry")
             self.search_url_button_event(True)
             return
         if not self.range_is_valid():
@@ -265,7 +259,6 @@ class App(customtkinter.CTk):
 
         if not self.valid_directory(self.folder_entry.get()):
             self.change_widget_state("normal")
-            print("directory not valid")
             return
         if not self.filename_equal:
             self.naming_choice = tkinter.messagebox.askyesnocancel("PDF Scraper", "The files will be named according to option 1. Press No for option 2.")
@@ -286,7 +279,6 @@ class App(customtkinter.CTk):
             return
         self.download_thread=threading.Thread(target=self.download_pdf)
         self.download_thread.start()
-        print("starting download thread")
     
     
     def download_pdf(self):
