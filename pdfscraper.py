@@ -24,7 +24,7 @@ class App(customtkinter.CTk):
         self.waiting_for_result = False
         self.geometry("772x577")
         self.resizable(False, False)
-        self.title_label = customtkinter.CTkLabel(self, text="PDF Downloader v1.0.0-alpha", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
+        self.title_label = customtkinter.CTkLabel(self, text="PDF Downloader v1.0.0-alpha.2", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
         self.title_label.grid(row=0, column=0, padx=10, pady=10)
         
         self.author_label = customtkinter.CTkLabel(self, text="Viren070 on GitHub", cursor="hand2",text_color="blue",font=customtkinter.CTkFont(family="Helvetica", size=15, underline=True))
