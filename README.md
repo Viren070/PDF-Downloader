@@ -1,5 +1,5 @@
 
-# PDF-Downloader
+# PDF Downloader
 A Python program to download PDFs off websites using a GUI made with customtkinter
 
 ## How it works
