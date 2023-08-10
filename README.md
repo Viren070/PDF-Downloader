@@ -3,11 +3,14 @@
 A Python program to download PDFs off websites using a GUI made with customtkinter
 
 ## How it works
-You enter a URL, and choose a download location - this can be left empty and the current directory will be used - and click either download or search URL. The search URL button will display the PDF files that were found on the webpage, and the download button will also download the PDF pages found on the webpage. A range can also be given if you only want to download certain files -  this can also be left empty.
+You enter a URL and click search. You can then open the File Selector (or just click download all and be prompted for a download folder [not added yet though]). 
 
-Here is a video demonstrating its use
+The File Selector allows you to select which files you want to edit and you can use the search bar at the top to search through the PDFs that were found on that URL. e.g. if you searched as-pure, only the PDFs that had that in either their original filenames or link will be showm. These can be selected and edited in batch. 
 
-![pdf_scraper-gif](https://user-images.githubusercontent.com/71220264/230736347-b1d4174e-cf89-4ed5-b299-626fada36936.gif)
+When you are done selecting which files you want to download and have changed the download folder and filenames, you can click download. A progress bar will show up and it will tell you the download speeds and percentage complete. It will also tell you how much time is left until the download finishes (not added yet)
+
+
+
 
 
 
