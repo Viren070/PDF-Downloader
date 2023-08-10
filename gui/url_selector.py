@@ -6,13 +6,14 @@ from gui.file_selector import FileSelector
 from tkinter import messagebox
 from threading import Thread
 import os
+from PIL import Image
 class URLSelector(customtkinter.CTk):
     def __init__(self, image_path):
         super().__init__()
         self.title("PDF Downloader")
-        self._url_input = None
-        self.create_widgets()
         self.image_path = image_path
+        self.file_selector = None
+        self.create_widgets()
         self.mainloop()
 
     def create_widgets(self):
@@ -34,7 +35,7 @@ class URLSelector(customtkinter.CTk):
         title_frame.grid_rowconfigure(0, weight=1)    
         
 
-        self.title_label = customtkinter.CTkLabel(title_frame, text="PDF Downloader v2.0", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
+        self.title_label = customtkinter.CTkLabel(title_frame, text="PDF Downloader v1.0.0", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
         self.title_label.grid(row=0, column=0, padx=10, pady=10)
 
         self.author_label = customtkinter.CTkLabel(title_frame, text="Viren070 on GitHub", cursor="hand2", text_color="blue", font=customtkinter.CTkFont(family="Helvetica", size=15, underline=True))
@@ -44,27 +45,34 @@ class URLSelector(customtkinter.CTk):
         url_entry_frame = customtkinter.CTkFrame(self.main_frame)
         url_entry_frame.grid(row=1, column=0, pady=20)
 
-        url_entry_frame.grid_columnconfigure(0, weight=1)
-        url_entry_frame.grid_columnconfigure(0, weight=0)
+        
+        
+        self.search_image = customtkinter.CTkImage(light_image=Image.open(os.path.join(self.image_path, "search_light.png")),
+                                                     dark_image=Image.open(os.path.join(self.image_path, "search_dark.png")), size=(20, 20))
 
         self.url_entry = customtkinter.CTkEntry(url_entry_frame, width=400, placeholder_text="Enter URL")
-        self.search_button = customtkinter.CTkButton(url_entry_frame, width=100, text="Search", command=self.search_url_wrapper)
+        self.search_button = customtkinter.CTkButton(url_entry_frame, width=20, image=self.search_image, text="", command=self.search_url_wrapper)
 
         self.url_entry.grid(padx=10, pady=10, row=0, column=0, sticky="ew")
         self.search_button.grid(padx=10, pady=10, row=0, column=1, sticky="e")
         
+        button_frame = customtkinter.CTkFrame(self.main_frame)
+        button_frame.grid(row=2, column=0, padx=20)
         
+        self.file_selector_button = customtkinter.CTkButton(button_frame, text="Open File Selector", command=self.open_file_selector)
+       # self.download_all_button = customtkinter.CTkButton(button_frame, text="Download All")
         
+        self.file_selector_button.grid(row=0, column=0, padx=10, pady=10)
         
 
     def search_url_wrapper(self):
-        self.search_button.configure(text="Searching...", state="disabled")
+        self.search_button.configure(state="disabled")
         self.url_entry.configure(state="disabled")
         if self.url_is_valid(self.url_entry.get()):
             Thread(target=self.search_url, args=(self.url_entry.get(),)).start()
         else:
             messagebox.showerror("PDF Downloader", "The URL you have entered appears to be invalid")
-            self.search_button.configure(text="Search", state="normal")
+            self.search_button.configure(state="normal")
             self.url_entry.configure(state="normal")
     def search_url(self, url):
    
@@ -72,28 +80,36 @@ class URLSelector(customtkinter.CTk):
         
         
         if pdfs is None:
-            self.search_button.configure(text="Search", state="normal")
+            self.search_button.configure(state="normal")
             self.url_entry.configure(state="normal")
             return
         if not pdfs:
-            self.search_button.configure(text="Search", state="normal")
+            self.search_button.configure(state="normal")
             self.url_entry.configure(state="normal")
             messagebox.showinfo("PDF Downloader", "No PDFs were found on that URL")
-            
-        self.search_button.configure(text="Creating Table...")
+            return
         
-        file_selector=FileSelector(self, url, pdfs, self.image_path)
-        file_selector.show_table()
+        
+        Thread(target=self.create_file_selector, args=(url, pdfs, self.image_path)).start()
+        messagebox.showinfo("PDF Downloader", f"{len(pdfs)} PDF Files were found at the specified URL.")
+        
+    def create_file_selector(self, *args):
+        self.file_selector_button.configure(state="disabled", text="Initialising File Selector...")
+        self.file_selector=FileSelector(self, *args)
+        self.file_selector_button.configure(state="normal", text="Open File Selector")
         self.url_entry.configure(state="normal")
-        self.search_button.configure(text="Search", state="normal")
-        
+        self.search_button.configure(state="normal")
+    
+    def open_file_selector(self):
+        if not self.file_selector == None:
+            self.file_selector.show_table()
+            self.file_selector_button.configure(state="disabled")
+        else:
+            messagebox.showerror("PDF Downloader", "Please enter a URL and click the search button")
+    
     def url_is_valid(self, url):
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
         except:
             return False
-
-    
-if __name__ == "__main__":
-    app = URLSelector()
