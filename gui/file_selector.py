@@ -417,4 +417,4 @@ class FileSelector(customtkinter.CTkToplevel):
     def quit(self):
         self.master.file_selector = None 
         self.master.file_selector_button.configure(state="normal")
-    
+        self.destroy()
