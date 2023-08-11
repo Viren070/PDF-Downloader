@@ -43,7 +43,7 @@ class URLSelector(customtkinter.CTk):
         self.author_label.grid(row=1, column=0, padx=10, pady=10)
 
         url_entry_frame = customtkinter.CTkFrame(self.main_frame)
-        url_entry_frame.grid(row=1, column=0, pady=20)
+        url_entry_frame.grid(row=1, column=0, pady=10)
 
         
         
@@ -51,15 +51,15 @@ class URLSelector(customtkinter.CTk):
                                                      dark_image=Image.open(os.path.join(self.image_path, "search_dark.png")), size=(20, 20))
 
         self.url_entry = customtkinter.CTkEntry(url_entry_frame, width=400, placeholder_text="Enter URL")
-        self.search_button = customtkinter.CTkButton(url_entry_frame, width=20, image=self.search_image, text="", command=self.search_url_wrapper)
+        self.search_button = customtkinter.CTkButton(url_entry_frame, width=40, image=self.search_image, text="", command=self.search_url_wrapper)
 
         self.url_entry.grid(padx=10, pady=10, row=0, column=0, sticky="ew")
         self.search_button.grid(padx=10, pady=10, row=0, column=1, sticky="e")
         
         button_frame = customtkinter.CTkFrame(self.main_frame)
-        button_frame.grid(row=2, column=0, padx=20)
+        button_frame.grid(row=2, column=0, padx=20, pady=10)
         
-        self.file_selector_button = customtkinter.CTkButton(button_frame, text="Open File Selector", command=self.open_file_selector)
+        self.file_selector_button = customtkinter.CTkButton(button_frame, text="Open File Selector", width=200, command=self.open_file_selector)
        # self.download_all_button = customtkinter.CTkButton(button_frame, text="Download All")
         
         self.file_selector_button.grid(row=0, column=0, padx=10, pady=10)
@@ -94,9 +94,9 @@ class URLSelector(customtkinter.CTk):
         messagebox.showinfo("PDF Downloader", f"{len(pdfs)} PDF Files were found at the specified URL.")
         
     def create_file_selector(self, *args):
-        self.file_selector_button.configure(state="disabled", text="Initialising File Selector...")
+        self.file_selector_button.configure(state="disabled", width=200, text="Initialising File Selector...")
         self.file_selector=FileSelector(self, *args)
-        self.file_selector_button.configure(state="normal", text="Open File Selector")
+        self.file_selector_button.configure(state="normal", width=200, text="Open File Selector")
         self.url_entry.configure(state="normal")
         self.search_button.configure(state="normal")
     
@@ -105,7 +105,7 @@ class URLSelector(customtkinter.CTk):
             self.file_selector.show_table()
             self.file_selector_button.configure(state="disabled")
         else:
-            messagebox.showerror("PDF Downloader", "Please enter a URL and click the search button")
+            messagebox.showerror("PDF Downloader", "Please enter a valid URL with PDFs and click the search button")
     
     def url_is_valid(self, url):
         try:

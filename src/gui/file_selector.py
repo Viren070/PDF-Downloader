@@ -5,7 +5,7 @@ from threading import Thread
 from tkinter import ttk, filedialog, messagebox
 import customtkinter
 from gui.progress_bar import ProgressBar
-from downloader.downloader import PDF
+from downloader.downloader import PDF, FileDownloadError, AbortDownload
 from utils.paths import is_path_exists_or_creatable
 from time import perf_counter
 from PIL import Image
@@ -56,7 +56,7 @@ class FileSelector(customtkinter.CTkToplevel):
         self.search_button.grid(row=0, column=1, padx=10, pady=10)
         
         self.actions_frame = customtkinter.CTkFrame(self.table_frame_wrapper, corner_radius=20)
-        self.actions_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        self.actions_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
         self.actions_frame.grid_rowconfigure(0, weight=1)
         self.actions_frame.grid_columnconfigure(0, weight=1)
         
@@ -70,8 +70,6 @@ class FileSelector(customtkinter.CTkToplevel):
         
         
         self.search_progress_bar = customtkinter.CTkProgressBar(self.master.main_frame, width=400)
-        self.search_progress_bar.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
-        self.search_progress_bar.set(0)
         self.table_frame = customtkinter.CTkScrollableFrame(self.table_frame_wrapper,width=720, height=400, corner_radius=20)
         self.table_frame.grid(row=1, column=0, padx=20, pady=20)
         self.create_table()
@@ -79,6 +77,8 @@ class FileSelector(customtkinter.CTkToplevel):
     def create_table(self, filename_or_url_contains=None, id_to_add=None):
         self.initialising_table = True
         self.widget_dict = {}
+        self.search_progress_bar.set(0)
+        self.search_progress_bar.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
         self.table_frame = customtkinter.CTkScrollableFrame(self.table_frame_wrapper,width=720, height=400, corner_radius=20)
         headers = ["ID", "Filename", "Download Location"]
         separator_column = 1
@@ -96,7 +96,7 @@ class FileSelector(customtkinter.CTkToplevel):
             separator_column+=2
             data_column+=2
         print(f"Took {(perf_counter() - header_start):.2f} To create headers")
-        self.all_checkbox = customtkinter.CTkCheckBox(self.table_frame, text="", width=25, height=25, onvalue=1, offvalue=0, command=self.select_all)
+        self.all_checkbox = customtkinter.CTkCheckBox(self.table_frame, text="", width=25, height=25, onvalue=1, offvalue=0, command=self.select_all_event)
         self.all_checkbox.grid(row=0, padx=10, column=data_column)
         
         # Add data rows
@@ -173,6 +173,7 @@ class FileSelector(customtkinter.CTkToplevel):
             self.search_progress_bar.set((index+1)/len(self.pdfs))
             print(f"Took {(perf_counter()-row_start):.2f} to create row")
         self.initialising_table = False
+        self.search_progress_bar.grid_forget()
     def shift_click_multi_select(self, event, pdf_id):
         if event.state & 1: # check if shift was held during click
             if len(self.shift_clicks) == 2:
@@ -180,7 +181,8 @@ class FileSelector(customtkinter.CTkToplevel):
                 self.shift_clicks.append(pdf_id)
             elif len(self.shift_clicks) == 1:
                 self.shift_clicks.append(pdf_id)
-                self.select_pdfs((self.shift_clicks[0], self.shift_clicks[1]))
+                Thread(target=self.select_pdfs, args=((self.shift_clicks[0], self.shift_clicks[1]),)).start()
+                #self.select_pdfs((self.shift_clicks[0], self.shift_clicks[1]))
             elif len(self.shift_clicks) == 0:
                 self.shift_clicks.append(pdf_id)
             else:
@@ -188,7 +190,6 @@ class FileSelector(customtkinter.CTkToplevel):
         self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
             
     def select_pdfs(self, ids, value=None):
-        
         if ids is None or not self.selected_pdfs:
             return 
         if isinstance(ids, int):
@@ -233,9 +234,12 @@ class FileSelector(customtkinter.CTkToplevel):
                 self.select_pdfs(pdf_id, value)
         else:
             # Invalid input type, just return
-            raise TypeError
+            raise TypeError(f"Expected int, list or tuple, instead got {type(ids)}")
             
         self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
+    def select_all_event(self):
+        Thread(target=self.select_all).start()
+        
     def select_all(self):
         value = self.all_checkbox.get()
         if value == 0:
@@ -251,7 +255,7 @@ class FileSelector(customtkinter.CTkToplevel):
                 self.selected_pdfs.append(pdf_id)
             elif value==False and pdf_id in self.selected_pdfs:
                 self.selected_pdfs.remove(pdf_id)  
-        self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
+            self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
     def search_button_event(self):
         string_to_search = self.search_entry.get()
         self.search_button.configure(state="disabled")
@@ -271,8 +275,13 @@ class FileSelector(customtkinter.CTkToplevel):
         self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
     
     def show_updated_table(self, *args):  
+        self.iconify()
         self.withdraw()
+        self.grab_release()
+        self.master.deiconify()
+        self.master.update()
         self.create_table(*args)
+        self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
         self.select_pdfs(self.selected_pdfs, True)
         self.update_current_widgets()
         self.show_table()
@@ -291,10 +300,15 @@ class FileSelector(customtkinter.CTkToplevel):
     def update_file_dest(self, pdf_id, value=None):
         if value is None:
             new_dest = filedialog.askdirectory(parent=self)
+            if new_dest is None or new_dest == "":
+                return
             if pdf_id == "All":
                 self.batch_update_in_progress = True
                 for pdf_id, entry in self.widget_dict.items():
-                    self.update_file_dest(pdf_id, new_dest)
+                    if self.selected_pdfs and pdf_id in self.selected_pdfs:
+                        self.update_file_dest(pdf_id, new_dest)
+                    elif not self.selected_pdfs:
+                        self.update_file_dest(pdf_id, new_dest)
                 self.batch_update_in_progress = False
             else:
                 self.update_file_dest(pdf_id, new_dest)
@@ -331,20 +345,17 @@ class FileSelector(customtkinter.CTkToplevel):
         if self.initialising_table:
             return
         info = self.final_info
-        if info is None:
-            return
-        errors = ""
-        incorrect_paths = ""
-        incorrect_filenames = ""
+        incorrect_paths = []
+        incorrect_filenames = []
         
         for pdf_id, entry in self.widget_dict.items():
             suggested_filename = entry["filename"].get()
             suggested_folder = entry["download_folder"].get()
             if not is_path_exists_or_creatable(suggested_folder):
-                incorrect_paths+=f"{pdf_id}, "
+                incorrect_paths.append(pdf_id)
                 continue
-            if  re.search(r'[\/:*?"<>|]', suggested_filename) or suggested_filename == "":
-                incorrect_filenames+=f"{pdf_id}, "
+            if  re.search(r'[\\/:*?"<>|]', suggested_filename) or suggested_filename == "":
+                incorrect_filenames.append(pdf_id)
                 continue
             pdf_info = {
                 "id": pdf_id,
@@ -353,13 +364,24 @@ class FileSelector(customtkinter.CTkToplevel):
                 "link": entry["link"]
             }
             info.update({pdf_id:pdf_info})
+            
+            
+
         if (incorrect_paths or incorrect_filenames) and not self.initialising_table:
-            messagebox.showerror("Invalid Filenames/Paths", f"Incorrect Filenames for {incorrect_filenames if incorrect_filenames else 'None'}\nIncorrect Paths for {incorrect_paths if incorrect_paths else 'None'}")
+            error_message = ""
+            if incorrect_paths:
+                error_message += f"Invalid Paths for PDFs with ID: {', '.join(map(str, incorrect_paths))}\n"
+            
+            if incorrect_filenames:
+                error_message += f"Invalid Filenames for PDFs with ID: {', '.join(map(str, incorrect_filenames))}"
+            
+            messagebox.showerror("Invalid Entries", error_message)
             self.update_current_widgets()
         self.final_info = info
     def update_current_widgets(self):
         self.updating_current_widgets = True
         if self.final_info is None or not self.final_info:
+            self.updating_current_widgets = False
             return
         for pdf_id, entry in self.widget_dict.items():
             old_pdf_info = self.final_info[pdf_id]
@@ -369,15 +391,17 @@ class FileSelector(customtkinter.CTkToplevel):
     def reset_window(self):
         self.reset_button.configure(state="disabled")
         self.download_button.configure(state="disabled")
-        self.final_info = None 
+        self.final_info = {}
         self.selected_pdfs = []
+        
         Thread(target=self.show_updated_table, args=("", 1)).start()
-        self.select_pdfs((0, len(self.pdfs)), False)
-    
+
     
     def download_button_event(self):
+        self.download_button.configure(state="disabled")
         if len(self.selected_pdfs) == 0:
-            messagebox.showerror("Error", "You have not selected any PDFs to download. Please use the checkboxes.\nNote: There is a select/deselect all checkbox at the top and you can shift click the checkboxes to select within a range")
+            messagebox.showerror("Error", "You have not selected any PDFs to download. Please use the checkboxes.\nNote: There is a select/deselect all checkbox at the top and you can shift click the checkboxes to select within a range", master=self)
+            self.download_button.configure(state="normal")
             return
         Thread(target=self.download_selected_pdfs).start()
 
@@ -385,36 +409,77 @@ class FileSelector(customtkinter.CTkToplevel):
     
     
     def download_selected_pdfs(self):
+        
+        if not self.final_info:
+            self.update_final_info()
         selected_pdfs = self.selected_pdfs
+        self.pdf_objects = []
         if not messagebox.askyesno("Confirmation", f"This will download {len(selected_pdfs)} PDF Files, are you sure you wish to continue"):
+            self.download_button.configure(state="normal")
             return
         download_progress = ProgressBar(self.table_frame_wrapper, "Getting PDF details", len(selected_pdfs))
         download_progress.grid(row=4, column=0, padx=20, pady=20, sticky="ew")
         count=0
         total_size_of_pdfs = 0
         download_progress.update_status("Status: Fetching File Details...")
+        session_errors = []
+        
         for num, pdf in enumerate(selected_pdfs, start=1):
             link = self.final_info[pdf]["link"]
             filename = self.final_info[pdf]["filename"]
             download_folder = self.final_info[pdf]["download_folder"]
             pdf_obj = PDF(filename, link, download_folder)
-            total_size_of_pdfs += pdf_obj.filesize
-            self.pdf_objects.append(pdf_obj)
-            download_progress.update_progress(num/download_progress.total)
+            try:
+                pdf_obj.create_session()
+                total_size_of_pdfs += pdf_obj.filesize
+                self.pdf_objects.append(pdf_obj)
+                
+            except Exception:
+                session_errors.append(filename)
+                download_progress.total -= 1
+                
+            if download_progress.total == 0:
+                messagebox.showerror("Error", "Unable to connect to any PDF url, aborting download.", master=self)
+                download_progress.destroy()
+                self.pdf_objects = []
+                self.download_button.configure(state="normal")
+                return
+            download_progress.update_progress_label(f"{num} PDFs / {len(selected_pdfs)} PDFs")
+            download_progress.update_progress(num/len(selected_pdfs))
+        if session_errors:
+            messagebox.showerror("Requests Error", f"Failed to establish connection to URL and create stream for {len(session_errors)} PDF Files.", master=self)
         download_progress.total_bytes = total_size_of_pdfs
         download_progress.update_progress(0)
         download_progress.update_status("Status: Downloading Files")
+        download_progress.update_total_progress_label("0")
+        download_progress.show_second_bar()
         for pdf in self.pdf_objects:
             download_progress.update_title(f"{pdf.filename} - {count+1}/{download_progress.total}")
-            pdf.download_pdf(download_progress)
-            count+=1
+            try:
+                pdf.download_pdf(download_progress)
+                count+=1
+            except PermissionError:
+                messagebox.showerror("PermissionError", f"PDF with filename {pdf.filename} failed to download due to a permission error. Please ensure you have permission to write in {pdf.download_folder}", master=self)
+            except FileDownloadError as Error:
+                messagebox.showerror("Download Error", f"Could not download {pdf.filename}: {Error}", master=self)
+            except AbortDownload as error:
+                messagebox.showinfo("Cancel", error)
+                break
+            except Exception as error:
+                messagebox.showerror("Error", f"An unknown error has occured while attempting to download {pdf.filename}\nFull Error: {error}", master=self)
+                
+        
+        messagebox.showinfo("Downloads", f"{count}/{download_progress.total} PDF Files with total file size of {(download_progress.downloaded_bytes/1024/1024):.1f} MB were downloaded successfully.", master=self)
         download_progress.complete_downloads()
         self.pdf_objects = []
- 
+        self.download_button.configure(state="normal")
             
             
 
     def quit(self):
         self.master.file_selector = None 
         self.master.file_selector_button.configure(state="normal")
+        self.withdraw()
+        self.iconify()
+        self.master.deiconify()
         self.destroy()
