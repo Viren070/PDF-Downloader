@@ -477,11 +477,13 @@ class FileSelector(customtkinter.CTkToplevel):
                 messagebox.showerror("Error", "Unable to connect to any PDF url, aborting download.", master=self)
                 download_progress.destroy()
                 pdf_objects = []
-                self.download_button.configure(state="normal")
+                
                 if download_all:
                     self.download_in_progress = False
+                    self.download_all_button.configure(state="normal")
                 else:
                     self.master.download_in_progress = False
+                    self.download_button.configure(state="normal")
                 return
             download_progress.update_progress_label(f"{num} PDFs / {len(selected_pdfs)} PDFs")
             download_progress.update_progress(num/len(selected_pdfs))
