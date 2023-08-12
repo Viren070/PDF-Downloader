@@ -14,6 +14,7 @@ class ProgressBar(customtkinter.CTkFrame):
         self.total_bytes = 0
         self.downloaded_bytes = 0
         self.time_during_cancel = 0
+        self.downloaded_files = 0
         self._create_widgets()
     def _create_widgets(self):
         self.download_name = customtkinter.CTkLabel(self, text=self.title)
@@ -75,7 +76,7 @@ class ProgressBar(customtkinter.CTkFrame):
 
         self.progress_label.configure(text=text)
     def update_total_progress_label(self, bytes):
-        self._total_progress_label.configure(text=f"{bytes} MB/ {(self.total_bytes/1024/1024):.1f} MB")
+        self._total_progress_label.configure(text=f"{bytes} MB / {(self.total_bytes/1024/1024):.1f} MB")
     def get(self):
         return self._progress_bar.get()
     

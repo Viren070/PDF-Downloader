@@ -10,6 +10,7 @@ from utils.paths import is_path_exists_or_creatable
 from time import perf_counter
 from PIL import Image
 import re
+from requests.exceptions import RequestException
 
 
 class FileSelector(customtkinter.CTkToplevel):
@@ -110,7 +111,7 @@ class FileSelector(customtkinter.CTkToplevel):
                 if not (filename_or_url_contains in pdf[1] or filename_or_url_contains in pdf[2] or filename_or_url_contains in pdf[0]):
                     self.search_progress_bar.set((index+1)/len(self.pdfs))
                     continue
-            print(f"Took {(perf_counter()-search_start):.2f} to search")
+            #print(f"Took {(perf_counter()-search_start):.2f} to search")
             widget_start = perf_counter()
             
             varstart=perf_counter()
@@ -121,20 +122,20 @@ class FileSelector(customtkinter.CTkToplevel):
             filename_var.trace_add('write', callback=self.update_final_info)
             file_dest_var.set(str(os.path.join(os.getcwd(), "Downloads")))
             file_dest_var.trace_add('write', callback=self.update_final_info)
-            print(f"Took {(perf_counter() - varstart):.2f}s to create variables")
+            #print(f"Took {(perf_counter() - varstart):.2f}s to create variables")
             # Widgets
             
             #  ID Column
             idstart=perf_counter()
             customtkinter.CTkLabel(self.table_frame, text=str(pdf_id)).grid(row=data_row, column=0, padx=10, pady=10)
-            print(f"Took {(perf_counter() - idstart):.2f}s to create id column")
+            #print(f"Took {(perf_counter() - idstart):.2f}s to create id column")
             
             #  Filename Column
             fstart = perf_counter()
             filename_entry = customtkinter.CTkEntry(self.table_frame, textvariable=filename_var, width=200)
             filename_entry.grid(row=data_row, column=2,padx=10,pady=10)
             filename_entry.bind('<Double-1>', command=lambda event, link=pdf[0]: webbrowser.open_new_tab(link))
-            print(f"Took {(perf_counter() - fstart):.2f}s to create filename column")
+            #print(f"Took {(perf_counter() - fstart):.2f}s to create filename column")
             
             #  Download Folder Column
             dstart = perf_counter()
@@ -143,7 +144,7 @@ class FileSelector(customtkinter.CTkToplevel):
             file_dest_entry=customtkinter.CTkEntry(file_dest_frame, textvariable=file_dest_var, width=200)
             file_dest_entry.grid(row=0, column=0, padx=10, sticky="ew")
             customtkinter.CTkButton(file_dest_frame, width=100, text="Browse", command=lambda pdf_id=pdf_id: self.update_file_dest(pdf_id)).grid(row=0, column=1, padx=2, pady=10, sticky="ew")
-            print(f"Took {(perf_counter() - dstart):.2f}s to create download folder column")
+            #print(f"Took {(perf_counter() - dstart):.2f}s to create download folder column")
        
             
             #  Checkbox Column
@@ -152,14 +153,14 @@ class FileSelector(customtkinter.CTkToplevel):
             checkbox_widget.grid(row=data_row, column=6, padx=10)
             #checkbox_widget.bind("<Button-1>", partial(self.shift_click_multi_select, pdf_id=pdf_id)) # use partial to send event and correct pdf_id
             checkbox_widget.bind("<Button-1>", command=lambda event, pdf_id=pdf_id: self.shift_click_multi_select(event, pdf_id))
-            print(f"Took {(perf_counter() - checkbox_start):.2f}s to create checkbox column")
+            #print(f"Took {(perf_counter() - checkbox_start):.2f}s to create checkbox column")
             
             #  Row Separator
             sep_start = perf_counter()
             ttk.Separator(self.table_frame, orient='horizontal').grid(row=separator_row, sticky="ew", columnspan= 1000)
-            print(f"Took {(perf_counter() - sep_start):.2f}s to create separator")
+            #print(f"Took {(perf_counter() - sep_start):.2f}s to create separator")
             
-            print(f"Took {(perf_counter() - widget_start):.2f} to create widgets")
+            #print(f"Took {(perf_counter() - widget_start):.2f} to create widgets")
             
             row_dict = {
                 "id": pdf_id,
@@ -171,7 +172,7 @@ class FileSelector(customtkinter.CTkToplevel):
             self.widget_dict.update({pdf_id: row_dict})
             separator_row,data_row = separator_row+2, data_row+2
             self.search_progress_bar.set((index+1)/len(self.pdfs))
-            print(f"Took {(perf_counter()-row_start):.2f} to create row")
+            #print(f"Took {(perf_counter()-row_start):.2f} to create row")
         self.initialising_table = False
         self.search_progress_bar.grid_forget()
     def shift_click_multi_select(self, event, pdf_id):
@@ -408,11 +409,12 @@ class FileSelector(customtkinter.CTkToplevel):
     
     
     
-    def download_selected_pdfs(self):
+    def download_selected_pdfs(self, pdfs_to_download=None):
         
         if not self.final_info:
             self.update_final_info()
-        selected_pdfs = self.selected_pdfs
+        failed_downloads = []
+        selected_pdfs = self.selected_pdfs if pdfs_to_download is None else pdfs_to_download
         self.pdf_objects = []
         if not messagebox.askyesno("Confirmation", f"This will download {len(selected_pdfs)} PDF Files, are you sure you wish to continue"):
             self.download_button.configure(state="normal")
@@ -428,15 +430,20 @@ class FileSelector(customtkinter.CTkToplevel):
             link = self.final_info[pdf]["link"]
             filename = self.final_info[pdf]["filename"]
             download_folder = self.final_info[pdf]["download_folder"]
-            pdf_obj = PDF(filename, link, download_folder)
+            pdf_id = pdf
+            pdf_obj = PDF(pdf_id, filename, link, download_folder)
             try:
                 pdf_obj.create_session()
-                total_size_of_pdfs += pdf_obj.filesize
+                if pdf_obj.filesize is not None:
+                    total_size_of_pdfs += pdf_obj.filesize
                 self.pdf_objects.append(pdf_obj)
                 
-            except Exception:
+            except RequestException as error:
                 session_errors.append(filename)
+                if not pdf_id in failed_downloads:
+                    failed_downloads.append(pdf_id)
                 download_progress.total -= 1
+                messagebox.showerror("Error", error)
                 
             if download_progress.total == 0:
                 messagebox.showerror("Error", "Unable to connect to any PDF url, aborting download.", master=self)
@@ -453,6 +460,7 @@ class FileSelector(customtkinter.CTkToplevel):
         download_progress.update_status("Status: Downloading Files")
         download_progress.update_total_progress_label("0")
         download_progress.show_second_bar()
+        download_progress.start_time = perf_counter()
         for pdf in self.pdf_objects:
             download_progress.update_title(f"{pdf.filename} - {count+1}/{download_progress.total}")
             try:
@@ -460,18 +468,26 @@ class FileSelector(customtkinter.CTkToplevel):
                 count+=1
             except PermissionError:
                 messagebox.showerror("PermissionError", f"PDF with filename {pdf.filename} failed to download due to a permission error. Please ensure you have permission to write in {pdf.download_folder}", master=self)
+                if not pdf.pdf_id in failed_downloads:
+                    failed_downloads.append(pdf.pdf_id)
             except FileDownloadError as Error:
                 messagebox.showerror("Download Error", f"Could not download {pdf.filename}: {Error}", master=self)
+                if not pdf.pdf_id in failed_downloads:
+                    failed_downloads.append(pdf.pdf_id)
             except AbortDownload as error:
                 messagebox.showinfo("Cancel", error)
                 break
             except Exception as error:
                 messagebox.showerror("Error", f"An unknown error has occured while attempting to download {pdf.filename}\nFull Error: {error}", master=self)
+                if not pdf.pdf_id in failed_downloads:
+                    failed_downloads.append(pdf.pdf_id)
                 
         
         messagebox.showinfo("Downloads", f"{count}/{download_progress.total} PDF Files with total file size of {(download_progress.downloaded_bytes/1024/1024):.1f} MB were downloaded successfully.", master=self)
         download_progress.complete_downloads()
         self.pdf_objects = []
+        if failed_downloads and messagebox.askyesno("Retry?", f"You have {len(failed_downloads)} PDF Files that failed to download, would you like to try downloading these files again?"):
+            self.download_selected_pdfs(failed_downloads)
         self.download_button.configure(state="normal")
             
             
