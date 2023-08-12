@@ -38,7 +38,7 @@ class URLSelector(customtkinter.CTk):
         title_frame.grid_rowconfigure(0, weight=1)    
         
 
-        self.title_label = customtkinter.CTkLabel(title_frame, text="PDF Downloader v1.0.1", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
+        self.title_label = customtkinter.CTkLabel(title_frame, text="PDF Downloader v1.0.2", font=customtkinter.CTkFont(size=24, family="Helvetica", weight="bold"))
         self.title_label.grid(row=0, column=0, padx=10, pady=10)
 
         self.author_label = customtkinter.CTkLabel(title_frame, text="Viren070 on GitHub", cursor="hand2", text_color="blue", font=customtkinter.CTkFont(family="Helvetica", size=15, underline=True))
