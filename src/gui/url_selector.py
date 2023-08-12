@@ -13,6 +13,9 @@ class URLSelector(customtkinter.CTk):
         self.title("PDF Downloader")
         self.image_path = image_path
         self.file_selector = None
+        self.pdfs = None
+        self.download_in_progress = False
+        self.resizable(False, False)
         self.create_widgets()
         self.mainloop()
 
@@ -56,18 +59,23 @@ class URLSelector(customtkinter.CTk):
         self.url_entry.grid(padx=10, pady=10, row=0, column=0, sticky="ew")
         self.search_button.grid(padx=10, pady=10, row=0, column=1, sticky="e")
         
-        button_frame = customtkinter.CTkFrame(self.main_frame)
-        button_frame.grid(row=2, column=0, padx=20, pady=10)
+        self.button_frame = customtkinter.CTkFrame(self.main_frame)
+        self.button_frame.grid(row=2, column=0, padx=20, pady=10)
         
-        self.file_selector_button = customtkinter.CTkButton(button_frame, text="Open File Selector", width=200, command=self.open_file_selector)
-       # self.download_all_button = customtkinter.CTkButton(button_frame, text="Download All")
+        self.file_selector_button = customtkinter.CTkButton(self.button_frame, text="Open File Selector", width=200, command=self.open_file_selector)
+        self.download_all_button = customtkinter.CTkButton(self.button_frame, text="Download All", state="disabled", width=200, command=self.download_all_event)
         
-        self.file_selector_button.grid(row=0, column=0, padx=10, pady=10)
+        self.file_selector_button.grid(row=0, column=1, padx=10, pady=10)
+        self.download_all_button.grid(row=0, column=0, padx=10, pady=10)
         
 
     def search_url_wrapper(self):
+        if self.download_in_progress:
+            messagebox.showinfo("Search", "Please wait until the download has finished or cancel it")
+            return
         self.search_button.configure(state="disabled")
         self.url_entry.configure(state="disabled")
+        self.download_all_button.configure(state="disabled")
         if self.url_is_valid(self.url_entry.get()):
             Thread(target=self.search_url, args=(self.url_entry.get(),)).start()
         else:
@@ -88,8 +96,8 @@ class URLSelector(customtkinter.CTk):
             self.url_entry.configure(state="normal")
             messagebox.showinfo("PDF Downloader", "No PDFs were found on that URL")
             return
-        
-        
+        self.pdfs = pdfs
+        self.download_all_button.configure(state="normal")
         Thread(target=self.create_file_selector, args=(url, pdfs, self.image_path)).start()
         messagebox.showinfo("PDF Downloader", f"{len(pdfs)} PDF Files were found at the specified URL.")
         
@@ -101,6 +109,9 @@ class URLSelector(customtkinter.CTk):
         self.search_button.configure(state="normal")
     
     def open_file_selector(self):
+        if self.download_in_progress:
+            messagebox.showinfo("E", "Please wait until the download has completed or cancel the download")
+            return
         if not self.file_selector == None:
             self.file_selector.show_table()
             self.file_selector_button.configure(state="disabled")
@@ -113,3 +124,12 @@ class URLSelector(customtkinter.CTk):
             return all([result.scheme, result.netloc])
         except:
             return False
+
+    def download_all_event(self):
+        if self.download_in_progress:
+            messagebox.showerror("Error", "There is already a download in progress")
+            return
+        self.download_all_button.configure(state="disabled")
+        Thread(target=self.download_all).start()
+    def download_all(self):
+        FileSelector.download_selected_pdfs(self, self.pdfs, True, self.main_frame)

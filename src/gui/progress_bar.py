@@ -15,6 +15,8 @@ class ProgressBar(customtkinter.CTkFrame):
         self.downloaded_bytes = 0
         self.time_during_cancel = 0
         self.downloaded_files = 0
+        self.configure(width=500, height=130)
+        
         self._create_widgets()
     def _create_widgets(self):
         self.download_name = customtkinter.CTkLabel(self, text=self.title)
@@ -54,12 +56,13 @@ class ProgressBar(customtkinter.CTkFrame):
         
         self.cancel_button = customtkinter.CTkButton(self, text="Cancel", command=self.raise_cancel)
         self.cancel_button.grid(row=5, column=5, padx=10, pady=5, sticky="E")
-        
     def show_second_bar(self):
+        self.grid_propagate(True)
         self._total_progress_bar.grid(row=4, column=0, columnspan=6,
                                padx=(10, 45), pady=5, sticky="EW")
         self._total_progress_label.grid(row=3, column=0, sticky="W", padx=10)
         self._total_percentage_complete.grid(row=4, column=5, sticky="E", padx=10)
+        self.grid_propagate(False)
     def update_progress(self, value):
         self._progress_bar.set(value)
         self.percentage_complete.configure(text=f"{str(value*100).split('.')[0]}%")
@@ -87,4 +90,5 @@ class ProgressBar(customtkinter.CTkFrame):
         self.download_speed_label.configure(text=f"{speed} MB/s")
         
     def raise_cancel(self):
-        self.cancel_raised = True
+        if messagebox.askyesno("Cancel", "Are you sure you wish to cancel this download?"):
+            self.cancel_raised = True

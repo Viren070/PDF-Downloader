@@ -18,6 +18,7 @@ class FileSelector(customtkinter.CTkToplevel):
         super().__init__()
         self.withdraw()
         self.master = master
+        self.resizable(False, False)
         self.url = url
         self.pdfs = pdfs
         self.selected_pdfs = [] 
@@ -25,7 +26,7 @@ class FileSelector(customtkinter.CTkToplevel):
         self.image_path = image_path
         self.title(f"File Selector {len(self.selected_pdfs)}/{len(self.pdfs)} Selected")
         self.final_info = {}
-        self.pdf_objects = []
+        pdf_objects = []
         self.updating_current_widgets = False
         self.batch_update_in_progress = False
         self.initialising_table = True
@@ -70,7 +71,7 @@ class FileSelector(customtkinter.CTkToplevel):
         self.reset_button.grid(row=0, column=0, padx=10, pady=10)
         
         
-        self.search_progress_bar = customtkinter.CTkProgressBar(self.master.main_frame, width=400)
+        self.search_progress_bar = customtkinter.CTkProgressBar(self.master.button_frame, width=400)
         self.table_frame = customtkinter.CTkScrollableFrame(self.table_frame_wrapper,width=720, height=400, corner_radius=20)
         self.table_frame.grid(row=1, column=0, padx=20, pady=20)
         self.create_table()
@@ -79,7 +80,7 @@ class FileSelector(customtkinter.CTkToplevel):
         self.initialising_table = True
         self.widget_dict = {}
         self.search_progress_bar.set(0)
-        self.search_progress_bar.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
+        self.search_progress_bar.grid(row=1, column=0, sticky="ew", padx=10, pady=10, columnspan=2)
         self.table_frame = customtkinter.CTkScrollableFrame(self.table_frame_wrapper,width=720, height=400, corner_radius=20)
         headers = ["ID", "Filename", "Download Location"]
         separator_column = 1
@@ -400,6 +401,10 @@ class FileSelector(customtkinter.CTkToplevel):
     
     def download_button_event(self):
         self.download_button.configure(state="disabled")
+        if self.master.download_in_progress:
+            messagebox.showerror("Error", "There is currently a download in progress, please cancel that or wait for it to finish")
+            self.download_button.configure(state="normal")
+            return
         if len(self.selected_pdfs) == 0:
             messagebox.showerror("Error", "You have not selected any PDFs to download. Please use the checkboxes.\nNote: There is a select/deselect all checkbox at the top and you can shift click the checkboxes to select within a range", master=self)
             self.download_button.configure(state="normal")
@@ -409,34 +414,57 @@ class FileSelector(customtkinter.CTkToplevel):
     
     
     
-    def download_selected_pdfs(self, pdfs_to_download=None):
-        
-        if not self.final_info:
+    def download_selected_pdfs(self, pdfs_to_download=None, download_all=False, frame=None):
+        if download_all:
+            self.download_in_progress = True
+        else:
+            self.master.download_in_progress = True
+        if not download_all and not self.final_info:
             self.update_final_info()
         failed_downloads = []
         selected_pdfs = self.selected_pdfs if pdfs_to_download is None else pdfs_to_download
-        self.pdf_objects = []
+        pdf_objects = []
         if not messagebox.askyesno("Confirmation", f"This will download {len(selected_pdfs)} PDF Files, are you sure you wish to continue"):
-            self.download_button.configure(state="normal")
+            if download_all:
+                self.download_all_button.configure(state="normal")
+            else:
+                self.download_button.configure(state="normal")
             return
-        download_progress = ProgressBar(self.table_frame_wrapper, "Getting PDF details", len(selected_pdfs))
-        download_progress.grid(row=4, column=0, padx=20, pady=20, sticky="ew")
+        if frame is None:
+            frame = self.master.main_frame
+        if download_all:
+            self.download_in_progress = True
+        else:
+            self.master.download_in_progress = True
+            self.grab_release()
+            self.withdraw()
+            self.master.grab_set()
+        download_progress = ProgressBar(frame, "Getting PDF details", len(selected_pdfs))
+        download_progress.grid(row=3, column=0, padx=20, pady=20, sticky="ew")
+        download_progress.grid_propagate(False)
         count=0
         total_size_of_pdfs = 0
         download_progress.update_status("Status: Fetching File Details...")
         session_errors = []
         
         for num, pdf in enumerate(selected_pdfs, start=1):
-            link = self.final_info[pdf]["link"]
-            filename = self.final_info[pdf]["filename"]
-            download_folder = self.final_info[pdf]["download_folder"]
+            if download_progress.cancel_raised:
+                break
+            if not download_all:
+                link = self.final_info[pdf]["link"]
+                filename = self.final_info[pdf]["filename"]
+                download_folder = self.final_info[pdf]["download_folder"]
+            else:
+                link=selected_pdfs[num-1][0]
+                filename = selected_pdfs[num-1][1]
+                download_folder = os.path.join(os.getcwd(), "Downloads")
             pdf_id = pdf
             pdf_obj = PDF(pdf_id, filename, link, download_folder)
             try:
                 pdf_obj.create_session()
                 if pdf_obj.filesize is not None:
                     total_size_of_pdfs += pdf_obj.filesize
-                self.pdf_objects.append(pdf_obj)
+                pdf_objects.append(pdf_obj)
                 
             except RequestException as error:
                 session_errors.append(filename)
@@ -448,8 +476,12 @@ class FileSelector(customtkinter.CTkToplevel):
             if download_progress.total == 0:
                 messagebox.showerror("Error", "Unable to connect to any PDF url, aborting download.", master=self)
                 download_progress.destroy()
-                self.pdf_objects = []
+                pdf_objects = []
                 self.download_button.configure(state="normal")
+                if download_all:
+                    self.download_in_progress = False
+                else:
+                    self.master.download_in_progress = False
                 return
             download_progress.update_progress_label(f"{num} PDFs / {len(selected_pdfs)} PDFs")
             download_progress.update_progress(num/len(selected_pdfs))
@@ -461,7 +493,7 @@ class FileSelector(customtkinter.CTkToplevel):
         download_progress.update_total_progress_label("0")
         download_progress.show_second_bar()
         download_progress.start_time = perf_counter()
-        for pdf in self.pdf_objects:
+        for pdf in pdf_objects:
             download_progress.update_title(f"{pdf.filename} - {count+1}/{download_progress.total}")
             try:
                 pdf.download_pdf(download_progress)
@@ -485,11 +517,22 @@ class FileSelector(customtkinter.CTkToplevel):
         
         messagebox.showinfo("Downloads", f"{count}/{download_progress.total} PDF Files with total file size of {(download_progress.downloaded_bytes/1024/1024):.1f} MB were downloaded successfully.", master=self)
         download_progress.complete_downloads()
-        self.pdf_objects = []
+        pdf_objects = []
         if failed_downloads and messagebox.askyesno("Retry?", f"You have {len(failed_downloads)} PDF Files that failed to download, would you like to try downloading these files again?"):
-            self.download_selected_pdfs(failed_downloads)
-        self.download_button.configure(state="normal")
-            
+            if download_all:
+                self.download_all(self, failed_downloads, True, self.main_frame)
+            else:
+                self.download_selected_pdfs(failed_downloads)
+        if download_all:
+            self.download_all_button.configure(state="normal")
+            self.download_in_progress = False
+        else:
+            self.download_button.configure(state="normal")
+            self.master.download_in_progress = False
+            self.update()
+            self.deiconify()
+            self.grab_set()
+        
             
 
     def quit(self):
