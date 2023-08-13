@@ -99,7 +99,7 @@ class FileSelector(customtkinter.CTkToplevel):
             ttk.Separator(self.table_frame, orient="vertical").grid(row=0, column=separator_column, sticky="sn", rowspan=1000)
             separator_column+=2
             data_column+=2
-        print(f"Took {(perf_counter() - header_start):.2f} To create headers")
+        #print(f"Took {(perf_counter() - header_start):.2f} To create headers")
         self.all_checkbox = customtkinter.CTkCheckBox(self.table_frame, text="", width=25, height=25, onvalue=1, offvalue=0, command=self.select_all_event)
         self.all_checkbox.grid(row=0, padx=10, column=data_column)
         
@@ -358,15 +358,17 @@ class FileSelector(customtkinter.CTkToplevel):
             if not is_path_exists_or_creatable(suggested_folder):
                 incorrect_paths.append(pdf_id)
                 continue
-            if  re.search(r'[\\/:*?"<>|]', suggested_filename) or suggested_filename == "":
+            if  re.search(r'[\\/:*?"<>|]', suggested_filename):
                 incorrect_filenames.append(pdf_id)
                 continue
+            
             pdf_info = {
                 "id": pdf_id,
                 "filename": entry["filename"].get(),
                 "download_folder": entry["download_folder"].get(),
                 "link": entry["link"]
             }
+            
             info.update({pdf_id:pdf_info})
             
             
@@ -460,6 +462,11 @@ class FileSelector(customtkinter.CTkToplevel):
                 link=selected_pdfs[num-1][0]
                 filename = selected_pdfs[num-1][1]
                 download_folder = os.path.join(os.getcwd(), "Downloads")
+                dup = 1
+                for pdfs in selected_pdfs:
+                    if (filename == pdfs[1]) and link != pdfs[0]:
+                        pdfs[1] = filename + " - " + str(dup)
+                        dup+=1
             pdf_id = pdf
             pdf_obj = PDF(pdf_id, filename, link, download_folder)
             try:
@@ -524,7 +531,7 @@ class FileSelector(customtkinter.CTkToplevel):
         pdf_objects = []
         if failed_downloads and messagebox.askyesno("Retry?", f"You have {len(failed_downloads)} PDF Files that failed to download, would you like to try downloading these files again?"):
             if download_all:
-                self.download_all(self, failed_downloads, True, self.main_frame)
+                FileSelector.download_selected_pdfs(self, failed_downloads, True, self.main_frame)
             else:
                 self.download_selected_pdfs(failed_downloads)
         if download_all:

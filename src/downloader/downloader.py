@@ -31,55 +31,51 @@ class PDF:
         self.url = url 
         self.download_folder = download_folder 
         self.response = None 
-        self.download_attempts = 0
-
+        self.download_attempts = 1
+        self.session_attempts = 1
         
-
+        self.file_path = os.path.join(self.download_folder, self.filename+".pdf")
         if not os.path.exists(download_folder):
             os.makedirs(download_folder)
     def create_session(self):
         headers = {
-            'Accept-Encoding': 'identity',  # Disable compression
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+            'Accept-Encoding': 'identity' # Disable compression
         }
-      
-        session = requests.Session()
-        
-        self.response = session.get(self.url, headers=headers, stream=True)
-        self.response.raise_for_status()
+
+        try:
+            session = requests.Session()
+            
+            self.response = session.get(self.url, headers=headers, stream=True, timeout=10)
+            self.response.raise_for_status()
+        except requests.exceptions.RequestException as error:
+            self.session_attempts+=1
+            if self.session_attempts > 3:
+                raise requests.exceptions.RequestException(error) from error
+            else:
+                print("retrying to create session for session")
+                self.create_session()
+                return
+
         
     
         # response=requests.get(link, headers=headers, stream=True)
         self.filesize = int(self.response.headers.get('content-length', 0))
+        
         if self.filesize == 0:
-            self.response.headers.clear()
-            self.filesize = int(self.response.headers.get('content-length', 0))
-
-            
-        if self.filesize == 0:
-            headers = {
-                'Accept-Encoding': 'identity',  # Disable compression
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-                'Range': 'bytes=0-1023'  # Fetch the first 1024 bytes
-            }
-            self.response.headers.update(headers)
-            print(self.response.headers)
-
-            # Calculate file size based on the content range
-            content_range = self.response.headers.get('content-range')
-            if content_range:
-                start, end, total = map(int, re.findall(r'\d+', content_range))
-                self.filesize = end - start + 1
+            self.session_attempts+=1
+            if self.session_attempts > 3:
+                print("After 3 retries, filesize was still 0 so set as None")
+                self.filesize = None
             else:
-                print("content range was empty")
-        if self.filesize == 0:
-            self.filesize = None
-        self.file_path = os.path.join(self.download_folder, self.filename+".pdf")
-
+                print("retrying to create session for filesize")
+                self.create_session()
+                return
+        
 
             
     def download_pdf(self, progress_bar):
         initial_value = progress_bar.get()
+        print(f"Downloading {self.filename} on attempt number {self.download_attempts}... ")
         with BytesIO() as f:
 
             start_time = perf_counter()
@@ -88,10 +84,12 @@ class PDF:
                 if progress_bar.cancel_raised:
                     raise AbortDownload()
                 progress_bar.update_progress(0)
+                progress_bar.update_progress_label(f"0 MB / 0 MB")
                 data = self.response.content
+                progress_bar.update_progress_label(f"0 MB / {len(data)} MB")
                 f.write(data)
                 progress_bar.downloaded_bytes += len(data)
-                progress_bar.total_bytes = progress_bar.downloaded_bytes
+                progress_bar.total_bytes += len(data)
                 progress_bar.update_total_progress_label(f"{progress_bar.downloaded_bytes/1024/1024:.1f}")
                 progress_bar.update_progress_label(f"{len(data)/1024/1024:.1f} MB / {len(data)/1024/1024:.1f} MB")
                 progress_bar.downloaded_files += 1
@@ -114,19 +112,25 @@ class PDF:
                     progress_bar.update_progress_label(f"{downloaded_bytes/1024/1024:.1f} MB / {self.filesize/1024/1024:.1f} MB")
                     progress_bar.update_total_progress_label(f"{progress_bar.downloaded_bytes/1024/1024:.1f}")
             if downloaded_bytes != self.filesize:
-                print(f"ERROR WHILE DOWNLOADING {self.filename}. Attempting again...\n\nReceived file size of {self.filesize} but only downloaded {downloaded_bytes}")
                 self.download_attempts += 1
-                if self.download_attempts <= 3:
+                if self.download_attempts < 3:
+                    print(f"ERROR WHILE DOWNLOADING {self.filename}. Attempting again...\nReceived file size of {self.filesize} but only downloaded {downloaded_bytes}")
+
                     progress_bar.downloaded_bytes -= downloaded_bytes
+                    self.create_session()
                     self.download_pdf(progress_bar)
+                    print("returning")
+                    return
                 else:
+                    print("exceeded 3 retries")
                     raise FileDownloadError(downloaded_bytes, self.filesize, perf_counter() - start_time)
             try:
                 with open(self.file_path, 'wb') as file:
                     file.write(f.getvalue())
+                    print(f"Downloaded {self.filename} on attempt number {self.download_attempts} to {self.file_path} ")
             except PermissionError as error:
                 progress_bar.downloaded_bytes -= self.filesize
-                
+                print("should raise permission error")
                 raise PermissionError(error) from error
         return self.file_path
         

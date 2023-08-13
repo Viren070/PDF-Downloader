@@ -29,6 +29,5 @@ def get_pdfs(url):
                 if not all([result.scheme, result.netloc]):
                     messagebox.showerror("Error", f"Received: {link.get('href')} \nwith urljoin: {pdf_url}\nResult = False")
                     continue
-            print(pdf_url)
             pdf_links.append([pdf_url, filename_one, filename_two])
     return pdf_links
