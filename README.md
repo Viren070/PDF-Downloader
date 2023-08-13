@@ -20,7 +20,7 @@ https://github.com/Viren070/PDF-Downloader/assets/71220264/863f2084-cccc-4d14-b3
 
 ### Using the File Selector
 - You can use the File selector to select specific PDF files and edit the file name and download folder for the files you have selected.
-
+- You can double click the file name entry box and this will open the PDF file on a new tab on your default browser 
 - You can shift click on the checkboxes to quickly select within a certain range
 - You can use the select/deselect all checkbox at the top (This only applies to currently shown rows, any rows you selected before and are not currently showing due to a search, for example, will not be selected/deselected
 - You can use the browse button at the top or the option menu next to filename to quickly edit the filenames and download folders for the PDF files you have selected (or all if none were selected)
