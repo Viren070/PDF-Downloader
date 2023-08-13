@@ -88,12 +88,15 @@ class PDF:
             start_time = perf_counter()
         
             if self.filesize is None:
+                if progress_bar.cancel_raised:
+                    raise AbortDownload()
                 progress_bar.update_progress(0)
                 data = self.response.content
                 f.write(data)
                 progress_bar.downloaded_bytes += len(data)
                 progress_bar.total_bytes = progress_bar.downloaded_bytes
                 progress_bar.update_total_progress_label(f"{progress_bar.downloaded_bytes/1024/1024:.1f}")
+                progress_bar.update_progress_label(f"{len(data)/1024/1024:.1f} MB / {len(data)/1024/1024:.1f} MB")
                 progress_bar.downloaded_files += 1
                 progress_bar.update_total_progress(progress_bar.downloaded_files/progress_bar.total)
                 progress_bar.update_progress(1)
