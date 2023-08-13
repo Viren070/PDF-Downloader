@@ -1,12 +1,16 @@
-import customtkinter
-from urllib.parse import urlparse
+import os
 import webbrowser
 from parser.pdf_parser import get_pdfs
-from gui.file_selector import FileSelector
-from tkinter import messagebox
 from threading import Thread
-import os
+from tkinter import messagebox
+from urllib.parse import urlparse
+
+import customtkinter
 from PIL import Image
+
+from gui.file_selector import FileSelector
+
+
 class URLSelector(customtkinter.CTk):
     def __init__(self, image_path):
         super().__init__()

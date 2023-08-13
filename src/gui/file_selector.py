@@ -1,16 +1,18 @@
 import os
+import re
 import webbrowser
 from functools import partial
 from threading import Thread
-from tkinter import ttk, filedialog, messagebox
-import customtkinter
-from gui.progress_bar import ProgressBar
-from downloader.downloader import PDF, FileDownloadError, AbortDownload
-from utils.paths import is_path_exists_or_creatable
 from time import perf_counter
+from tkinter import filedialog, messagebox, ttk
+
+import customtkinter
 from PIL import Image
-import re
 from requests.exceptions import RequestException
+
+from downloader.downloader import PDF, AbortDownload, FileDownloadError
+from gui.progress_bar import ProgressBar
+from utils.paths import is_path_exists_or_creatable
 
 
 class FileSelector(customtkinter.CTkToplevel):

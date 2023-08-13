@@ -1,10 +1,7 @@
 
-import customtkinter
 import os
-from pathlib import Path
 import requests
 from urllib.parse import urljoin
-from tkinter import messagebox
 from io import BytesIO
 import re
 from time import perf_counter

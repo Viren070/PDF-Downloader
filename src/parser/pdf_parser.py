@@ -1,9 +1,9 @@
-import customtkinter
+import re
+from tkinter import messagebox
+from urllib.parse import urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
-from tkinter import messagebox
-import re
-from urllib.parse import urljoin, urlparse
 
 
 def get_pdfs(url):      
