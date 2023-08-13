@@ -4,3 +4,4 @@ Downloads/
 build/
 dist/
 *.spec
+*.bat
