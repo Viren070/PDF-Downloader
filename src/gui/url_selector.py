@@ -1,6 +1,6 @@
 import os
 import webbrowser
-from parser.pdf_parser import get_pdfs
+from parser.pdf_parser import get_pdfs, get_more_pdfs
 from threading import Thread
 from tkinter import messagebox
 from urllib.parse import urlparse
@@ -19,6 +19,7 @@ class URLSelector(customtkinter.CTk):
         self.file_selector = None
         self.pdfs = None
         self.download_in_progress = False
+        self.creating_file_selector = False
         self.resizable(False, False)
         self.create_widgets()
         self.mainloop()
@@ -113,15 +114,14 @@ class URLSelector(customtkinter.CTk):
             return
         self.pdfs = pdfs    
         self.download_all_button.configure(state="normal")
-        Thread(target=self.create_file_selector, args=(url, pdfs, self.image_path)).start()
-        messagebox.showinfo("PDF Downloader", f"{len(pdfs)} PDF Files were found at the specified URL.")
-        
     def create_file_selector(self, *args):
+        self.creating_file_selector = True
         self.file_selector_button.configure(state="disabled", width=200, text="Initialising File Selector...")
         self.file_selector=FileSelector(self, *args)
         self.file_selector_button.configure(state="normal", width=200, text="Open File Selector")
         self.url_entry.configure(state="normal")
         self.search_button.configure(state="normal")
+        self.creating_file_selector = False
     
     def open_file_selector(self):
         if self.download_in_progress:
@@ -130,6 +130,8 @@ class URLSelector(customtkinter.CTk):
         if not self.file_selector == None:
             self.file_selector.show_table()
             self.file_selector_button.configure(state="disabled")
+        elif self.file_selector == None and not self.creating_file_selector:
+            Thread(target=self.create_file_selector, args=(self.pdfs, self.image_path)).start()
         else:
             messagebox.showerror("PDF Downloader", "Please enter a valid URL with PDFs and click the search button")
     
