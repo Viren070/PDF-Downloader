@@ -72,6 +72,8 @@ class URLSelector(customtkinter.CTk):
         self.file_selector_button.grid(row=0, column=1, padx=10, pady=10)
         self.download_all_button.grid(row=0, column=0, padx=10, pady=10)
         
+        self.search_progress_bar = customtkinter.CTkProgressBar(self.button_frame, width=400)
+        self.search_progress_bar.set(0)
 
     def search_url_wrapper(self):
         if self.download_in_progress:
@@ -86,10 +88,14 @@ class URLSelector(customtkinter.CTk):
             messagebox.showerror("PDF Downloader", "The URL you have entered appears to be invalid")
             self.search_button.configure(state="normal")
             self.url_entry.configure(state="normal")
-    def search_url(self, url):
+    def search_url(self, url, method="normal"):
    
-        pdfs = get_pdfs(url)
-        
+        if method == "normal":
+            pdfs = get_pdfs(url)
+        elif method == "advanced":
+            self.search_progress_bar.grid(row=1, column=0, sticky="ew", padx=10, pady=10, columnspan=2)
+            pdfs = get_more_pdfs(url, self.search_progress_bar)
+            self.search_progress_bar.grid_forget()
         
         if pdfs is None:
             self.search_button.configure(state="normal")
@@ -99,8 +105,13 @@ class URLSelector(customtkinter.CTk):
             self.search_button.configure(state="normal")
             self.url_entry.configure(state="normal")
             messagebox.showinfo("PDF Downloader", "No PDFs were found on that URL")
+        else:
+            messagebox.showinfo("Search Results", f"{len(pdfs)} PDF Files were found at the specified URL." )
+
+        if method=="normal" and messagebox.askyesno("PDF Downloader", "Would you like to try searching the URL again with another method? (This method will take more time but will scan each link for a pdf file thus possibly resulting in more PDFs being found)"):
+            self.search_url(url, "advanced")
             return
-        self.pdfs = pdfs
+        self.pdfs = pdfs    
         self.download_all_button.configure(state="normal")
         Thread(target=self.create_file_selector, args=(url, pdfs, self.image_path)).start()
         messagebox.showinfo("PDF Downloader", f"{len(pdfs)} PDF Files were found at the specified URL.")
