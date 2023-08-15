@@ -16,12 +16,11 @@ from utils.paths import is_path_exists_or_creatable
 
 
 class FileSelector(customtkinter.CTkToplevel):
-    def __init__(self, master, url, pdfs, image_path):
+    def __init__(self, master, pdfs, image_path):
         super().__init__()
         self.withdraw()
         self.master = master
         self.resizable(False, False)
-        self.url = url
         self.pdfs = pdfs
         self.selected_pdfs = [] 
         self.shift_clicks = []
